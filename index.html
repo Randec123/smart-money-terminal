@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#07090c" />
+  <meta name="description" content="Smart Money Terminal — live Solana prices, charts and trades, plus a GMGN smart-money snapshot." />
+  <title>Smart Money Terminal</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div id="app">
+    <aside id="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"></div>
+        <div>
+          <div class="brand-title">Smart Money</div>
+          <div class="brand-sub">Terminal</div>
+        </div>
+      </div>
+      <nav id="side-nav" class="side-nav"></nav>
+      <div class="sidebar-foot">
+        <p>Prices, charts and trades stream from public APIs in your browser. Smart-money tabs are a snapshot, not a live feed.</p>
+      </div>
+    </aside>
+
+    <div id="shell">
+      <header class="mobile-header" id="mobile-header">
+        <div class="brand compact">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div class="brand-title">Smart Money</div>
+        </div>
+        <div id="mobile-live" class="live-pill" hidden><span class="pulse"></span> LIVE</div>
+      </header>
+
+      <div id="ticker" class="ticker" role="region" aria-label="Major coin prices"></div>
+      <div id="status-bar" class="status-bar"></div>
+      <main id="workspace" class="workspace"></main>
+    </div>
+
+    <nav id="mobile-tabs" class="mobile-tabs" aria-label="Mobile tabs"></nav>
+  </div>
+  <div id="toast" class="toast" hidden role="status"></div>
+</body>
+</html>
