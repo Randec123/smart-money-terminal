@@ -11,8 +11,8 @@ const INTERVAL = {
   trending: 60_000,
   newPools: 60_000,
   boosts: 60_000,
-  trades: 12_000,
-  candles: 45_000,
+  trades: 15_000,
+  candles: 60_000,
   smartMoney: 5 * 60_000,
   watchlist: 60_000,
 };
@@ -40,6 +40,7 @@ const NAV = [
   { id: "nansen", label: "Nansen Scan", kind: "snap" },
   { id: "fib", label: "Fib Levels", kind: "live" },
   { id: "custom", label: "Custom Alerts", kind: "live" },
+  { id: "whales", label: "Whale Flow", kind: "live" },
 ];
 
 const MOBILE_TABS = [
@@ -48,6 +49,7 @@ const MOBILE_TABS = [
   { id: "accumulation", label: "Accum." },
   { id: "charts", label: "Charts" },
   { id: "watchlist", label: "Watch" },
+  { id: "whales", label: "Whales" },
 ];
 
 const TF = {
@@ -115,8 +117,17 @@ function saveJson(key, value) {
 let backoffUntil = 0;
 let backoffMs = 2000;
 
+const hostBackoff = {};
+function hostOf(url) { try { return new URL(url, location.href).host; } catch { return ""; } }
+function hostBlocked(url) { return Date.now() < (hostBackoff[hostOf(url)] || 0); }
+function gtBlocked() { return Date.now() < (hostBackoff["api.geckoterminal.com"] || 0); }
+function noteBackoff(url, ms) {
+  const hst = hostOf(url);
+  hostBackoff[hst] = Date.now() + ms;
+  state.rateLimitedUntil = Math.max(...Object.values(hostBackoff));
+}
 async function fetchJson(url, { signal, timeout = 20000, cacheBust = false } = {}) {
-  if (Date.now() < backoffUntil) {
+  if (hostBlocked(url)) {
     const err = new Error("Backing off after a 429");
     err.code = "BACKOFF";
     throw err;
@@ -127,13 +138,25 @@ async function fetchJson(url, { signal, timeout = 20000, cacheBust = false } = {
   if (signal) signal.addEventListener("abort", onAbort);
   const finalUrl = cacheBust ? url + (url.includes("?") ? "&" : "?") + "_=" + Date.now() : url;
   try {
-    const res = await fetch(finalUrl, { signal: ctrl.signal, headers: { Accept: "application/json" } });
+    let res;
+    try {
+      res = await fetch(finalUrl, { signal: ctrl.signal, headers: { Accept: "application/json" } });
+    } catch (netErr) {
+      // A 429 from GeckoTerminal arrives without CORS headers, so the browser reports a network/CORS error.
+      if (netErr.name !== "AbortError" && hostOf(url) !== location.host) {
+        backoffMs = Math.min(Math.max(backoffMs * 2, 15000), 120000);
+        noteBackoff(url, backoffMs);
+        const err = new Error("Request blocked or rate limited; backing off");
+        err.code = "429";
+        throw err;
+      }
+      throw netErr;
+    }
     if (res.status === 429) {
       const ra = res.headers.get("Retry-After");
       const wait = ra && /^\d+$/.test(ra) ? Number(ra) * 1000 : Math.min(backoffMs * 2, 120000);
-      backoffMs = Math.min(Math.max(wait, 8000), 120000);
-      backoffUntil = Date.now() + backoffMs;
-      state.rateLimitedUntil = backoffUntil;
+      backoffMs = Math.min(Math.max(wait, 15000), 120000);
+      noteBackoff(url, backoffMs);
       const err = new Error("Rate limited (429); backing off");
       err.code = "429";
       throw err;
@@ -872,6 +895,7 @@ function goNav(id) {
   else if (id === "accumulation") state.mobileTab = "accumulation";
   else if (id === "watchlist") state.mobileTab = "watchlist";
   else if (id === "fib") state.mobileTab = "charts";
+  else if (id === "whales") state.mobileTab = "whales";
   renderAll();
 }
 
@@ -901,6 +925,7 @@ function renderMobileTabs() {
         else if (item.id === "accumulation") state.nav = "accumulation";
         else if (item.id === "charts") state.nav = "terminal";
         else if (item.id === "watchlist") state.nav = "watchlist";
+        else if (item.id === "whales") state.nav = "whales";
         renderAll();
       },
     }, item.label));
@@ -996,6 +1021,7 @@ function renderWorkspace() {
   else if (view === "nansen") ws.append(renderNansen());
   else if (view === "fib") ws.append(renderFib());
   else if (view === "custom") ws.append(renderCustom());
+  else if (view === "whales") ws.append(renderWhales());
 
   requestAnimationFrame(() => {
     paintChart();
@@ -1325,7 +1351,7 @@ function renderTradesPanel() {
       h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
       h("span", { class: "panel-updated", id: "trades-updated", text: stamp("LIVE", state.tradesAt, state.tradesErr) })
     ),
-    h("div", { class: "panel-note", text: "GeckoTerminal pool trades, refreshed about every 12s. Public tape — not labeled as smart-money wallets." }),
+    h("div", { class: "panel-note", text: "GeckoTerminal pool trades, refreshed about every 15s. Public tape — not labeled as smart-money wallets." }),
     h("div", { class: "panel-body", id: "trades-body" }, tradesTable())
   );
   return panel;
@@ -1755,30 +1781,300 @@ function checkCustomAlerts(tokens) {
   }
 }
 
+
+/* ---------- Live on-chain whale flow (public GeckoTerminal trades, not smart-money labeled) ---------- */
+const LS_WHALE = "smt-whale-v1";
+const WHALE_POOL_EVERY = 12000;     // one pool every 12s while Whale Flow is open
+const WHALE_POOL_IDLE = 30000;      // one pool every 30s in the background
+const WHALE_GLOBAL_EVERY = 120000;  // all-chain trending list refresh
+const WHALE_MAX_POOLS = 10;
+const WHALE_KEEP = 250;
+const WHALE_WINDOW_MS = 60 * 60 * 1000;
+const EXPLORER = {
+  solana: "https://solscan.io/account/",
+  eth: "https://etherscan.io/address/",
+  ethereum: "https://etherscan.io/address/",
+  bsc: "https://bscscan.com/address/",
+  base: "https://basescan.org/address/",
+  arbitrum: "https://arbiscan.io/address/",
+  polygon_pos: "https://polygonscan.com/address/",
+  avax: "https://snowtrace.io/address/",
+  optimism: "https://optimistic.etherscan.io/address/",
+};
+const WHALE_DS_CHAIN = { eth: "ethereum", polygon_pos: "polygon", avax: "avalanche" };
+const savedWhale = loadJson(LS_WHALE, {});
+const whale = {
+  threshold: Number(savedWhale.threshold) > 0 ? Number(savedWhale.threshold) : 1000,
+  scope: savedWhale.scope === "all" ? "all" : "solana",
+  side: ["all", "buy", "sell"].includes(savedWhale.side) ? savedWhale.side : "buy",
+  trades: new Map(),
+  globalPools: [], globalAt: null, globalErr: null,
+  cursor: 0, at: null, err: null, lastPool: null, scanned: new Set(),
+};
+function saveWhale() { saveJson(LS_WHALE, { threshold: whale.threshold, scope: whale.scope, side: whale.side }); }
+
+function whalePools() {
+  const src = whale.scope === "all" ? whale.globalPools : state.trending;
+  return src.filter((p) => p.pool && p.address).slice(0, WHALE_MAX_POOLS);
+}
+async function loadWhaleGlobal() {
+  if (whale.scope !== "all") return;
+  try {
+    const data = await fetchJson(GT + "/networks/trending_pools?include=base_token,quote_token,dex");
+    whale.globalPools = (data.data || []).map((p) => poolToToken(p, data.included)).filter((t) => t.address);
+    whale.globalAt = new Date();
+    whale.globalErr = null;
+  } catch (e) { whale.globalErr = e.message; }
+}
+async function whaleTick() {
+  const pools = whalePools();
+  if (!pools.length) return;
+  const tok = pools[whale.cursor % pools.length];
+  whale.cursor = (whale.cursor + 1) % Math.max(pools.length, 1);
+  const net = GT_NET[tok.network] || tok.network;
+  const url = GT + "/networks/" + net + "/pools/" + tok.pool + "/trades?trade_volume_in_usd_greater_than=" + Math.floor(whale.threshold);
+  try {
+    const data = await fetchJson(url);
+    for (const t of data.data || []) {
+      const a = t.attributes || {};
+      const usd = num(a.volume_in_usd);
+      if (usd == null || usd < whale.threshold) continue;
+      const key = net + ":" + a.tx_hash + ":" + a.kind + ":" + tok.pool;
+      if (whale.trades.has(key)) continue;
+      whale.trades.set(key, {
+        key, t: a.block_timestamp, side: a.kind === "sell" ? "sell" : "buy", usd,
+        wallet: a.tx_from_address || "", tx: a.tx_hash, net, network: tok.network,
+        symbol: tok.symbol, name: tok.name, address: tok.address, pool: tok.pool, chainLabel: tok.chainLabel,
+        price: a.kind === "sell" ? num(a.price_from_in_usd) : num(a.price_to_in_usd),
+      });
+    }
+    pruneWhales();
+    whale.at = new Date();
+    whale.err = null;
+    whale.lastPool = tok.symbol;
+    whale.scanned.add(tok.pool);
+  } catch (e) {
+    whale.err = e.message;
+  }
+  if (onWhaleView()) refreshWhaleBody();
+}
+function pruneWhales() {
+  const cutoff = Date.now() - WHALE_WINDOW_MS;
+  const rows = [...whale.trades.values()].filter((r) => new Date(r.t).getTime() >= cutoff && r.usd >= whale.threshold);
+  rows.sort((a, b) => new Date(b.t) - new Date(a.t));
+  whale.trades = new Map(rows.slice(0, WHALE_KEEP).map((r) => [r.key, r]));
+}
+function whaleRepeatStats() {
+  const m = new Map();
+  for (const r of whale.trades.values()) {
+    if (r.side !== "buy" || !r.wallet) continue;
+    const s = m.get(r.wallet) || { buys: 0, tokens: new Set(), usd: 0 };
+    s.buys += 1; s.tokens.add(r.address); s.usd += r.usd;
+    m.set(r.wallet, s);
+  }
+  return m;
+}
+function onWhaleView() {
+  return isMobile() ? state.mobileTab === "whales" : state.nav === "whales";
+}
+function explorerUrl(net, wallet) {
+  const base = EXPLORER[net];
+  return base && wallet ? base + wallet : "";
+}
+function whaleDsUrl(r) {
+  return "https://dexscreener.com/" + (WHALE_DS_CHAIN[r.net] || r.network) + "/" + r.address;
+}
+
+function renderWhales() {
+  const wrap = h("div", { class: "stack", style: { maxWidth: "1200px" } });
+  wrap.append(h("h1", { class: "page-head", text: "Whale Flow" }));
+  wrap.append(h("div", { class: "callout info" },
+    h("strong", { text: "Live on-chain whale flow (public data, not smart-money labeled). " }),
+    "Large public trades on currently trending pools from GeckoTerminal. These wallets are not GMGN or Nansen smart money; “repeat whale” only means the wallet made several large buys in this feed. The GMGN smart-money snapshot is a separate tab."
+  ));
+  const controls = h("div", { class: "chart-tools", style: { padding: "0" } });
+  const thr = h("div", { class: "seg" });
+  for (const v of [500, 1000, 2500, 5000, 10000]) {
+    thr.append(h("button", { type: "button", class: whale.threshold === v ? "active" : "", onclick: () => setWhaleThreshold(v) }, "≥ $" + (v >= 1000 ? (v / 1000) + "K" : v)));
+  }
+  const custom = h("input", { type: "number", min: "100", step: "100", value: String(whale.threshold), title: "Custom minimum USD",
+    style: { width: "96px", background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: "7px", padding: "5px 8px", fontSize: "12px" } });
+  custom.addEventListener("change", (e) => { const v = Number(e.target.value); if (Number.isFinite(v) && v >= 100) setWhaleThreshold(v); });
+  const side = h("div", { class: "seg" });
+  for (const [v, l] of [["buy", "Buys"], ["sell", "Sells"], ["all", "Both"]]) {
+    side.append(h("button", { type: "button", class: whale.side === v ? "active" : "", onclick: () => { whale.side = v; saveWhale(); renderWorkspace(); } }, l));
+  }
+  const scope = h("div", { class: "seg" });
+  for (const [v, l] of [["solana", "Solana"], ["all", "All chains"]]) {
+    scope.append(h("button", { type: "button", class: whale.scope === v ? "active" : "", onclick: () => setWhaleScope(v) }, l));
+  }
+  controls.append(h("span", { class: "sub", text: "Min size" }), thr, custom, side, scope);
+  wrap.append(controls);
+  const panel = h("div", { class: "panel" });
+  panel.append(
+    h("div", { class: "panel-head" },
+      h("h2", { text: "Large trades" }),
+      h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
+      h("span", { class: "panel-updated", id: "whale-updated", text: whaleStamp() })
+    ),
+    h("div", { class: "panel-body", id: "whale-body" }, whaleBody())
+  );
+  wrap.append(panel);
+  wrap.append(h("p", { class: "page-lead", text: "Refresh: one trending pool is checked every 12 seconds in rotation while this tab is open (every 30 seconds in the background), across the top " + WHALE_MAX_POOLS + " pools, so each pool about every 2 minutes. GeckoTerminal's free API allows only a few calls per minute, so this is deliberately gentle. Trades from the last 60 minutes are kept. Polling pauses when this browser tab is hidden and backs off on rate limits. Your size, side and chain settings are saved in this browser." }));
+  return wrap;
+}
+function setWhaleThreshold(v) {
+  whale.threshold = v;
+  saveWhale();
+  pruneWhales();
+  renderWorkspace();
+}
+function setWhaleScope(v) {
+  whale.scope = v;
+  whale.cursor = 0;
+  whale.scanned = new Set();
+  saveWhale();
+  if (v === "all" && !whale.globalPools.length) loadWhaleGlobal().then(() => { if (onWhaleView()) renderWorkspace(); });
+  renderWorkspace();
+}
+function whaleStamp() {
+  const pools = whalePools();
+  const bits = [stamp("LIVE", whale.at, whale.err)];
+  bits.push("scanned " + Math.min(whale.scanned.size, pools.length) + "/" + pools.length + " pools");
+  if (whale.lastPool) bits.push("last " + whale.lastPool);
+  if (whale.scope === "all" && whale.globalErr) bits.push("all-chain list error: " + whale.globalErr);
+  return bits.join(" · ");
+}
+function refreshWhaleBody() {
+  const body = document.getElementById("whale-body");
+  const up = document.getElementById("whale-updated");
+  if (up) up.textContent = whaleStamp();
+  if (!body) return;
+  const st = body.scrollTop;
+  clear(body);
+  body.append(whaleBody());
+  body.scrollTop = st;
+}
+function whaleBody() {
+  const repeat = whaleRepeatStats();
+  const rows = [...whale.trades.values()].filter((r) => whale.side === "all" || r.side === whale.side);
+  const box = h("div");
+  const repeats = [...repeat.entries()].filter(([, s]) => s.buys >= 2 || s.tokens.size >= 2).sort((a, b) => b[1].usd - a[1].usd);
+  if (repeats.length) {
+    const rp = h("div", { class: "panel-note" }, h("strong", { text: "Repeat whales (2+ large buys or 2+ tokens, last 60 min): " }));
+    repeats.slice(0, 8).forEach(([w, s], i) => {
+      if (i) rp.append(" · ");
+      rp.append(h("span", { class: "mono", text: shortCa(w) }), " " + s.buys + " buys / " + s.tokens.size + " token" + (s.tokens.size === 1 ? "" : "s") + " " + formatUsd(s.usd, "size"));
+    });
+    box.append(rp);
+  }
+  if (!rows.length) {
+    box.append(h("div", { class: "empty", text: whale.err && !whale.trades.size ? "Error: " + whale.err : (whalePools().length ? "No trades at or above " + formatUsd(whale.threshold, "size") + " yet. The feed fills in as pools are scanned." : "Waiting for the trending pool list…") }));
+    return box;
+  }
+  if (isMobile()) {
+    for (const r of rows.slice(0, 120)) box.append(whaleCard(r, repeat.get(r.wallet)));
+    return box;
+  }
+  const table = h("table", { class: "data" });
+  table.append(h("thead", {}, h("tr", {},
+    h("th", { text: "Time" }), h("th", { text: "Token" }), h("th", { text: "Chain" }), h("th", { text: "Side" }),
+    h("th", { class: "num", text: "Size" }), h("th", { text: "Wallet" }), h("th", { text: "Links" })
+  )));
+  const tb = h("tbody");
+  for (const r of rows.slice(0, 200)) {
+    const s = repeat.get(r.wallet);
+    const isRepeat = s && (s.buys >= 2 || s.tokens.size >= 2);
+    tb.append(h("tr", {},
+      h("td", { class: "mono", text: formatEtClock(r.t) }),
+      h("td", {}, h("a", { href: "#", text: r.symbol, onclick: (e) => { e.preventDefault(); openWhaleToken(r); } })),
+      h("td", { text: r.chainLabel }),
+      h("td", { class: r.side === "buy" ? "side-buy" : "side-sell", text: r.side === "buy" ? "Buy" : "Sell" }),
+      h("td", { class: "num", text: formatUsd(r.usd, "size") }),
+      h("td", {}, walletLink(r), isRepeat ? h("span", { class: "chip whale", text: "repeat whale ×" + s.buys }) : null),
+      h("td", {}, tokenLinks(r))
+    ));
+  }
+  table.append(tb);
+  box.append(table);
+  return box;
+}
+function walletLink(r) {
+  const url = explorerUrl(r.net, r.wallet);
+  return url ? h("a", { class: "mono", href: url, target: "_blank", rel: "noreferrer", text: shortCa(r.wallet) }) : h("span", { class: "mono", text: shortCa(r.wallet) });
+}
+function tokenLinks(r) {
+  const frag = h("span", { style: { display: "inline-flex", gap: "8px" } });
+  frag.append(h("a", { href: whaleDsUrl(r), target: "_blank", rel: "noreferrer", text: "DexScreener" }));
+  const g = gmgnUrl(r.network, r.address);
+  if (g && GMGN_CHAIN[r.network]) frag.append(h("a", { href: g, target: "_blank", rel: "noreferrer", text: "GMGN" }));
+  return frag;
+}
+function whaleCard(r, s) {
+  const isRepeat = s && (s.buys >= 2 || s.tokens.size >= 2);
+  return h("div", { class: "token-card", style: { marginBottom: "8px", cursor: "default" } },
+    h("div", { class: "top" },
+      h("div", {},
+        h("div", { class: "name-row" },
+          h("span", { class: "sym", text: r.symbol }),
+          h("span", { class: "chip", text: r.chainLabel }),
+          h("span", { class: r.side === "buy" ? "chip up" : "chip down", text: r.side === "buy" ? "Buy" : "Sell" }),
+          isRepeat ? h("span", { class: "chip whale", text: "repeat ×" + s.buys }) : null
+        ),
+        h("div", { class: "sub" }, formatEtClock(r.t) + " · ", walletLink(r))
+      ),
+      h("div", { class: "right" }, h("div", { class: "mono", style: { fontSize: "15px", fontWeight: "600" }, text: formatUsd(r.usd, "size") }))
+    ),
+    h("div", { class: "actions" },
+      h("button", { class: "btn sm primary", type: "button", onclick: () => openWhaleToken(r) }, "Live chart"),
+      tokenLinks(r)
+    )
+  );
+}
+function openWhaleToken(r) {
+  const found = [...state.trending, ...whale.globalPools].find((t) => t.pool === r.pool);
+  if (found) selectToken(found); else resolveAndSelect(WHALE_DS_CHAIN[r.net] || r.network, r.address);
+  state.nav = "terminal";
+  if (isMobile()) state.mobileTab = "charts";
+  renderAll();
+}
+function startWhalePollers() {
+  const loop = async () => {
+    if (!document.hidden && !gtBlocked()) await whaleTick();
+    setTimeout(loop, onWhaleView() ? WHALE_POOL_EVERY : WHALE_POOL_IDLE);
+  };
+  setTimeout(loop, 8000);
+  setInterval(() => { if (!document.hidden && !gtBlocked()) loadWhaleGlobal(); }, WHALE_GLOBAL_EVERY);
+  if (whale.scope === "all") setTimeout(loadWhaleGlobal, 5000);
+}
+
+function chartVisible() {
+  if (isMobile()) return state.mobileTab === "charts";
+  return state.nav === "terminal";
+}
 function startPollers() {
   for (const p of pollers) clearInterval(p);
   pollers = [];
   const every = (fn, ms) => {
     pollers.push(setInterval(() => {
       if (document.hidden) return;
-      if (Date.now() < backoffUntil) return;
       fn();
     }, ms));
   };
   every(loadMajors, INTERVAL.majors);
   every(loadTrending, INTERVAL.trending);
-  every(loadNewPools, INTERVAL.newPools);
-  every(loadBoosts, INTERVAL.boosts);
+  every(() => { if (state.listTab === "new") loadNewPools(); }, INTERVAL.newPools);
+  every(() => { if (state.listTab === "boosted") loadBoosts(); }, INTERVAL.boosts);
   every(loadSmartMoney, INTERVAL.smartMoney);
   every(loadWatchlist, INTERVAL.watchlist);
-  every(() => loadCandles(tokenAbort?.signal), INTERVAL.candles);
-  every(() => loadTrades(tokenAbort?.signal), INTERVAL.trades);
+  every(() => { if (chartVisible() || state.nav === "fib") loadCandles(tokenAbort?.signal); }, INTERVAL.candles);
+  every(() => { if (chartVisible()) loadTrades(tokenAbort?.signal); }, INTERVAL.trades);
 }
 
 function init() {
   renderAll();
   Promise.all([
-    loadMajors(), loadSmartMoney(), loadTrending(), loadNewPools(), loadBoosts(), loadWatchlist(),
+    loadMajors(), loadSmartMoney(), loadTrending(), loadWatchlist(),
   ]).then(() => {
     if (state.selected) {
       if (tokenAbort) tokenAbort.abort();
@@ -1787,6 +2083,7 @@ function init() {
     }
   });
   startPollers();
+  startWhalePollers();
   mq.addEventListener("change", () => renderAll());
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {

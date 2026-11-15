@@ -32,6 +32,7 @@ Every live panel shows a **LIVE** pill and a last-updated time in Eastern Time. 
 | Flow tab, public movers, public buy-side filter | Same trending payload | 60s | Clearly labeled as public flow |
 | Fib Levels | Derived from the live candle set | with candles | Geometric retracement only |
 | Watchlist prices | DexScreener `tokens/v1/{chain}/{addresses}` | 60s | Watchlist is stored in `localStorage` (`smt-watchlist-v1`) |
+| Whale Flow (live on-chain whale flow, public data, not smart-money labeled) | GeckoTerminal `networks/{net}/pools/{pool}/trades?trade_volume_in_usd_greater_than=<min>` across the top 10 trending pools (Solana, or all chains via `networks/trending_pools`) | one pool every 12s while the tab is open, every 30s otherwise (all-chain list every 2 min) | Min size $500/$1K/$2.5K/$5K/$10K or custom (default $1K), Buys/Sells/Both, last 60 min kept; wallets with 2+ large buys or 2+ tokens marked “repeat whale”; settings in `localStorage` (`smt-whale-v1`) |
 | Custom price alerts | Same live prices | with those polls | Stored in `localStorage` (`smt-alerts-v1`); local only |
 | Smart-money tabs | `data/smart-money.json` | on load, then every 5 minutes (cache-busted) | **Snapshot.** Its own as-of time is always shown |
 
