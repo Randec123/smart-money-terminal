@@ -34,6 +34,9 @@ Every live panel shows a **LIVE** pill and a last-updated time in Eastern Time. 
 | Watchlist prices | DexScreener `tokens/v1/{chain}/{addresses}` | 60s | Watchlist is stored in `localStorage` (`smt-watchlist-v1`) |
 | Whale Flow (live on-chain whale flow, public data, not smart-money labeled) | GeckoTerminal `networks/{net}/pools/{pool}/trades?trade_volume_in_usd_greater_than=<min>` across the top 10 trending pools (Solana, or all chains via `networks/trending_pools`) | one pool every 12s while the tab is open, every 30s otherwise (all-chain list every 2 min) | Min size $500/$1K/$2.5K/$5K/$10K or custom (default $1K), Buys/Sells/Both, last 60 min kept; wallets with 2+ large buys or 2+ tokens marked “repeat whale”; settings in `localStorage` (`smt-whale-v1`) |
 | Custom price alerts | Same live prices | with those polls | Stored in `localStorage` (`smt-alerts-v1`); local only |
+| Holder risk (Terminal, under the score) | Solana: RugCheck `api.rugcheck.xyz/v1/tokens/{mint}/report`. EVM (eth, bsc, base, arbitrum, polygon, avax, optimism): GoPlus `api.gopluslabs.io/api/v1/token_security/{chainId}?contract_addresses=` | on token select, cached 5 min | Red/amber/green flags. Solana: mint/freeze authority, LP locked % (≥90 green, ≥50 amber, else red), top-10 holders excluding AMM/lock/burn accounts (>50% red, >30% amber), largest holder (>20% red, >10% amber), insiders, insider network, transfer fee, `rugged`, RugCheck danger/warn risks. EVM: honeypot, buy/sell tax (>10% red, >0 amber), mintable, hidden owner, owner can change balance, pausable, proxy, source verified, top-10 unlocked holders, LP locked %. Unknown = **—**. Honeypot.is was tested and not used (404 “No pairs found” on test tokens). |
+| Tracked Wallets (desktop nav, mobile “Wallets” tab) | `data/smart-wallets.json` (GMGN Smart Net Inflow wallets) + Solana RPC `solana-rpc.publicnode.com` (`getSignaturesForAddress` limit 5, `getTransaction` jsonParsed, `maxSupportedTransactionVersion: 1`) + matches in the Whale Flow GeckoTerminal trade scan; symbols from DexScreener `tokens/v1` | one wallet every 20s on the tab (40s otherwise), ≥2.5s between RPC calls, list reloaded every 10 min | GMGN shows wallets shortened (`72tA…Bu5D`), so only wallets with a known full address are polled on-chain. Others are matched when a public trade’s address has the same first 4 / last 4 characters (an inference; collisions are unlikely but possible), then learned in `localStorage` (`smt-resolved-wallets-v1`) and polled. Swap side/size come from balance changes (SOL, WSOL, USDC, USDT) and are estimates; **—** when unknown. Hits kept 6 h. The official `api.mainnet-beta.solana.com` RPC returned 403 and was not used. |
+| Alerts (sound, browser notification, in-page toast) | Whale Flow buys ≥ your threshold, tracked-wallet buys, watchlist/custom price alerts | as those feeds update | Opt-in toggles at the top of **Custom Alerts**, mute pill in the status bar, stored in `localStorage` (`smt-notify-v1`). Throttle: one per kind per 20s and 8 per 5 min (extra are counted as “held back”). Only events after the page opened fire. Alerts work only while the site is open in a tab. |
 | Smart-money tabs | `data/smart-money.json` | on load, then every 5 minutes (cache-busted) | **Snapshot.** Its own as-of time is always shown |
 
 DexScreener `token-profiles/latest/v1` was verified (HTTP 200, CORS `*`) and is available for a later panel; the first version uses boosts, search, and token snapshots instead.
@@ -98,6 +101,7 @@ Field rules:
 - `asOfET` is required and is what the UI displays. Use an Eastern Time label (`… ET`). `asOfISO` is the same instant in ISO-8601 with offset.
 - `nansenConnected` is a boolean. Leave it `false` and omit any Nansen figures unless a real Nansen session provided them.
 - `trending[]` is the GMGN Solana 1h top list from the capture. `smartWalletCount` and `kolCount` must be `null` when GMGN did not show a count (the UI then shows —). Use a real number only when GMGN displayed one.
+- `smartFlows[]` rows may add `"walletFull"` (the complete base58 address) whenever GMGN shows it; that lets the Tracked Wallets tab poll the wallet on-chain right away.
 - `smartFlows[]`.`action` is one of `First Buy`, `Buy More`, `Sell All`, `Sell Partial`. `usd` is the signed net inflow (negative for sells). `age` is the literal age string GMGN showed at capture, not a live-updating age. `wallet` may be abbreviated the way GMGN showed it. `token` is the ticker as GMGN labeled it (the UI matches it to trending CAs by name; “Maxcoin” matches symbol `Max`; two Sakura CAs are both linked).
 - Do not invent prices, percentages, wallet counts, or flow rows. If a field was not captured, use `null` or omit the row.
 
@@ -109,17 +113,29 @@ Suggested steps, once the GitHub repo exists and a machine can push:
 
 1. Capture a new GMGN session (trending 10 + holder-risk fields + Smart Net Inflow tape + any real smart-wallet / KOL counts). Leave counts `null` if they still are not on the page. Leave `nansenConnected` false unless Nansen actually connected.
 2. Write a complete new `data/smart-money.json` (do not merge leftover rows from an older capture). Set `asOfET` / `asOfISO` to the capture time in America/New_York.
-3. Commit only that file to `main`:
+3. Commit it with the helper script (needs `GH_TOKEN` in the environment; the token is sent as a one-off header and never saved):
 
 ```bash
-git add data/smart-money.json
-git commit -m "Refresh GMGN smart-money snapshot (as of … ET)"
-git push origin main
+./push-snapshot.sh   # merges wallets, commits both data files, pull --rebase, push
 ```
 
 From a bot or MCP session that has **write** access, the equivalent is a contents-API update of `data/smart-money.json` on `main` (GitHub REST `PUT /repos/{owner}/{repo}/contents/data/smart-money.json`, or `gh api`). The Cursor GitHub connector available when this site was first built had **no** `create_or_update_file` / push / Pages tools, so a refresh job needs whatever write path is granted later.
 
 4. GitHub Pages usually publishes in a minute or two. The live page does not need a full reload if it is open: it will refetch the JSON on its 5-minute timer.
+
+## `data/smart-wallets.json` (tracked smart wallets)
+
+Built from every GMGN Smart Net Inflow row in `data/smart-money.json` and its git history. Top-level: `updatedET`, `updatedISO`, `source`, `cap` (50), `mergeRule`, `wallets[]`. Each wallet: `wallet` (GMGN short form `prefix…suffix`), `prefix`, `suffix`, `walletFull` (full address or `null`), `resolvedBy`, `label` (`GMGN smart inflow`), `firstSeenISO/ET`, `lastSeenISO/ET`, `lastSnapshotISO`, `snapshots`, `buys`, `sells`, `buyUsd`, `tokens[]`.
+
+**Merge rule** (`tools/merge-wallets.py`, run by `push-snapshot.sh` before each commit):
+
+1. Key every `smartFlows[]` row by `prefix…suffix` (both `…` and `...` accepted; from `walletFull` when present).
+2. A wallet's counters change at most once per snapshot `asOfISO` (`lastSnapshotISO`), so re-running is a no-op.
+3. A known `walletFull` is never dropped or overwritten; a new one is only taken from a real `walletFull` field, never guessed.
+4. New wallets get `firstSeen` = that snapshot and label `GMGN smart inflow`.
+5. Re-rank by snapshots seen, then buys, distinct tokens, buy USD; keep the top 50 (repeat wallets win).
+
+`push-snapshot.sh` stages both `data/smart-money.json` and `data/smart-wallets.json`.
 
 ## Local preview
 

@@ -41,6 +41,7 @@ const NAV = [
   { id: "fib", label: "Fib Levels", kind: "live" },
   { id: "custom", label: "Custom Alerts", kind: "live" },
   { id: "whales", label: "Whale Flow", kind: "live" },
+  { id: "tracked", label: "Tracked Wallets", kind: "live" },
 ];
 
 const MOBILE_TABS = [
@@ -50,6 +51,7 @@ const MOBILE_TABS = [
   { id: "charts", label: "Charts" },
   { id: "watchlist", label: "Watch" },
   { id: "whales", label: "Whales" },
+  { id: "wallets", label: "Wallets" },
 ];
 
 const TF = {
@@ -896,6 +898,7 @@ function goNav(id) {
   else if (id === "watchlist") state.mobileTab = "watchlist";
   else if (id === "fib") state.mobileTab = "charts";
   else if (id === "whales") state.mobileTab = "whales";
+  else if (id === "tracked") state.mobileTab = "wallets";
   renderAll();
 }
 
@@ -926,6 +929,7 @@ function renderMobileTabs() {
         else if (item.id === "charts") state.nav = "terminal";
         else if (item.id === "watchlist") state.nav = "watchlist";
         else if (item.id === "whales") state.nav = "whales";
+        else if (item.id === "wallets") state.nav = "tracked";
         renderAll();
       },
     }, item.label));
@@ -961,6 +965,7 @@ function renderStatus() {
   el.append(h("span", { class: "pill snap", text: asOf ? "GMGN smart-money snapshot as of " + asOf : (state.smartErr ? "Smart-money file: " + state.smartErr : "Loading smart-money snapshot…") }));
   const nansenOn = state.smart?.nansenConnected === true;
   el.append(h("span", { class: "pill " + (nansenOn ? "live" : "warn"), text: nansenOn ? "Nansen connected" : "Nansen Scan not connected" }));
+  el.append(muteButton());
   if (state.rateLimitedUntil > Date.now()) {
     el.append(h("span", { class: "pill danger", text: "API backoff until " + formatEtClock(new Date(state.rateLimitedUntil)) }));
   }
@@ -1022,6 +1027,7 @@ function renderWorkspace() {
   else if (view === "fib") ws.append(renderFib());
   else if (view === "custom") ws.append(renderCustom());
   else if (view === "whales") ws.append(renderWhales());
+  else if (view === "tracked" || view === "wallets") ws.append(renderTracked());
 
   requestAnimationFrame(() => {
     paintChart();
@@ -1337,6 +1343,7 @@ function renderScorePanel() {
   ));
   grid.append(scoreCard("Volume", formatUsd(tok.vol?.h1, "size"), "1h · 24h " + formatUsd(tok.vol?.h24, "size") + " · Liq " + formatUsd(tok.liquidity, "size")));
   panel.append(grid);
+  panel.append(renderRiskPanel(tok));
   return panel;
 }
 function scoreCard(k, v, d) {
@@ -1709,6 +1716,7 @@ function renderFib() {
 function renderCustom() {
   const wrap = h("div", { class: "stack" });
   wrap.append(h("h1", { class: "page-head", text: "Custom Alerts" }));
+  wrap.append(renderNotifyPanel());
   wrap.append(h("p", { class: "page-lead", text: "Price alerts are stored only in this browser. They fire against live DexScreener or GeckoTerminal prices for tokens on your watchlist or the trending list. They are not wallet alerts and they are not sent as push notifications unless you grant permission." }));
   const tok = state.selected;
   const form = h("div", { class: "watch-add", style: { flexWrap: "wrap" } });
@@ -1773,10 +1781,7 @@ function checkCustomAlerts(tokens) {
     if (hit) {
       const msg = a.symbol + " is " + formatUsd(t.price) + " (" + a.condition + " " + formatUsd(a.price) + ") at " + formatET(new Date(), true);
       state.firedAlerts[a.id] = msg;
-      toast(msg);
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        try { new Notification("Smart Money Terminal", { body: msg }); } catch { /* */ }
-      }
+      notifyAlert("price", "Price alert", msg);
     }
   }
 }
@@ -1832,12 +1837,13 @@ async function whaleTick() {
   const tok = pools[whale.cursor % pools.length];
   whale.cursor = (whale.cursor + 1) % Math.max(pools.length, 1);
   const net = GT_NET[tok.network] || tok.network;
-  const url = GT + "/networks/" + net + "/pools/" + tok.pool + "/trades?trade_volume_in_usd_greater_than=" + Math.floor(whale.threshold);
+  const url = GT + "/networks/" + net + "/pools/" + tok.pool + "/trades?trade_volume_in_usd_greater_than=" + Math.floor(Math.min(whale.threshold, 25));
   try {
     const data = await fetchJson(url);
     for (const t of data.data || []) {
       const a = t.attributes || {};
       const usd = num(a.volume_in_usd);
+      if (tok.network === "solana") trackTradeMatch(a, tok, net);
       if (usd == null || usd < whale.threshold) continue;
       const key = net + ":" + a.tx_hash + ":" + a.kind + ":" + tok.pool;
       if (whale.trades.has(key)) continue;
@@ -1847,6 +1853,9 @@ async function whaleTick() {
         symbol: tok.symbol, name: tok.name, address: tok.address, pool: tok.pool, chainLabel: tok.chainLabel,
         price: a.kind === "sell" ? num(a.price_from_in_usd) : num(a.price_to_in_usd),
       });
+      if (a.kind !== "sell" && new Date(a.block_timestamp).getTime() > Math.max(PAGE_START, Date.now() - 180000)) {
+        notifyAlert("whale", "Whale buy", tok.symbol + " " + formatUsd(usd, "size") + " by " + shortCa(a.tx_from_address || ""));
+      }
     }
     pruneWhales();
     whale.at = new Date();
@@ -1991,7 +2000,7 @@ function whaleBody() {
       h("td", { text: r.chainLabel }),
       h("td", { class: r.side === "buy" ? "side-buy" : "side-sell", text: r.side === "buy" ? "Buy" : "Sell" }),
       h("td", { class: "num", text: formatUsd(r.usd, "size") }),
-      h("td", {}, walletLink(r), isRepeat ? h("span", { class: "chip whale", text: "repeat whale ×" + s.buys }) : null),
+      h("td", {}, walletLink(r), isRepeat ? h("span", { class: "chip whale", text: "repeat whale ×" + s.buys }) : null, tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: "tracked smart wallet" }) : null),
       h("td", {}, tokenLinks(r))
     ));
   }
@@ -2019,7 +2028,8 @@ function whaleCard(r, s) {
           h("span", { class: "sym", text: r.symbol }),
           h("span", { class: "chip", text: r.chainLabel }),
           h("span", { class: r.side === "buy" ? "chip up" : "chip down", text: r.side === "buy" ? "Buy" : "Sell" }),
-          isRepeat ? h("span", { class: "chip whale", text: "repeat ×" + s.buys }) : null
+          isRepeat ? h("span", { class: "chip whale", text: "repeat ×" + s.buys }) : null,
+          tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: "tracked" }) : null
         ),
         h("div", { class: "sub" }, formatEtClock(r.t) + " · ", walletLink(r))
       ),
@@ -2052,6 +2062,520 @@ function chartVisible() {
   if (isMobile()) return state.mobileTab === "charts";
   return state.nav === "terminal";
 }
+
+/* ======================================================================
+   Alerts: opt-in sound + browser notifications, toast fallback, throttled
+   ====================================================================== */
+const LS_NOTIFY = "smt-notify-v1";
+const PAGE_START = Date.now();
+const notifyCfg = Object.assign(
+  { mute: false, sound: false, browser: false, whale: true, tracked: true, price: true },
+  loadJson(LS_NOTIFY, {})
+);
+const notifyLog = { lastByKind: {}, recent: [], suppressed: 0 };
+const NOTIFY_KIND_GAP_MS = 20000;   // at most one alert per kind every 20s
+const NOTIFY_WINDOW_MS = 5 * 60000; // and at most 8 alerts per 5 minutes overall
+const NOTIFY_WINDOW_MAX = 8;
+let audioCtx = null;
+function saveNotify() { saveJson(LS_NOTIFY, notifyCfg); }
+function beep(kind) {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.value = kind === "tracked" ? 880 : kind === "price" ? 660 : 520;
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime + 0.4);
+  } catch { /* audio not available */ }
+}
+function notifyAlert(kind, title, body) {
+  if (notifyCfg.mute || notifyCfg[kind] === false) return;
+  const now = Date.now();
+  notifyLog.recent = notifyLog.recent.filter((t) => now - t < NOTIFY_WINDOW_MS);
+  if (now - (notifyLog.lastByKind[kind] || 0) < NOTIFY_KIND_GAP_MS || notifyLog.recent.length >= NOTIFY_WINDOW_MAX) {
+    notifyLog.suppressed += 1;
+    return;
+  }
+  notifyLog.lastByKind[kind] = now;
+  notifyLog.recent.push(now);
+  const extra = notifyLog.suppressed ? " (+" + notifyLog.suppressed + " more held back)" : "";
+  notifyLog.suppressed = 0;
+  toast(title + " — " + body + extra);
+  if (notifyCfg.sound) beep(kind);
+  if (notifyCfg.browser && typeof Notification !== "undefined" && Notification.permission === "granted") {
+    try { new Notification(title, { body: body + extra, tag: "smt-" + kind }); } catch { /* */ }
+  }
+}
+async function setBrowserNotify(on) {
+  if (on && typeof Notification !== "undefined" && Notification.permission !== "granted") {
+    try { await Notification.requestPermission(); } catch { /* */ }
+    if (Notification.permission !== "granted") { toast("Browser notifications were not allowed; using on-page alerts."); on = false; }
+  }
+  if (on && typeof Notification === "undefined") { toast("This browser does not support notifications; using on-page alerts."); on = false; }
+  notifyCfg.browser = on; saveNotify(); renderAll();
+}
+function renderNotifyPanel() {
+  const panel = h("div", { class: "panel" });
+  panel.append(h("div", { class: "panel-head" }, h("h2", { text: "Alert sounds & notifications" }),
+    h("span", { class: "panel-updated", text: notifyCfg.mute ? "muted" : "on" })));
+  const body = h("div", { class: "notify-grid" });
+  const tog = (key, label, onChange) => {
+    const id = "nt-" + key;
+    const inp = h("input", { type: "checkbox", id });
+    inp.checked = !!notifyCfg[key];
+    inp.addEventListener("change", (e) => { if (onChange) onChange(e.target.checked); else { notifyCfg[key] = e.target.checked; saveNotify(); renderAll(); } });
+    return h("label", { class: "toggle", for: id }, inp, " " + label);
+  };
+  body.append(
+    tog("mute", "Mute all alerts"),
+    tog("sound", "Play a sound", (v) => { notifyCfg.sound = v; saveNotify(); if (v) beep("whale"); renderAll(); }),
+    tog("browser", "Browser notifications" + (typeof Notification !== "undefined" ? " (" + Notification.permission + ")" : " (unsupported)"), setBrowserNotify),
+    tog("whale", "Whale-flow buys at or above your Whale Flow minimum"),
+    tog("tracked", "Tracked smart wallet buys"),
+    tog("price", "Watchlist / custom price alerts")
+  );
+  panel.append(body, h("div", { class: "panel-note", text: "Saved in this browser. Throttled to one alert per type every 20 seconds and 8 per 5 minutes; extra alerts are counted, not lost from the feeds. Alerts only run while this site is open in a tab." }));
+  return panel;
+}
+function muteButton() {
+  return h("button", { class: "pill " + (notifyCfg.mute ? "warn" : "live"), type: "button", style: { cursor: "pointer" },
+    title: "Toggle alert sounds and notifications",
+    onclick: () => { notifyCfg.mute = !notifyCfg.mute; saveNotify(); renderStatus(); toast(notifyCfg.mute ? "Alerts muted" : "Alerts on"); } },
+    notifyCfg.mute ? "🔕 Alerts muted" : "🔔 Alerts on");
+}
+
+/* ======================================================================
+   Live holder risk: RugCheck (Solana) and GoPlus (EVM)
+   ====================================================================== */
+const RUGCHECK = "https://api.rugcheck.xyz/v1/tokens/";
+const GOPLUS = "https://api.gopluslabs.io/api/v1/token_security/";
+const GOPLUS_CHAIN = { ethereum: "1", eth: "1", bsc: "56", base: "8453", arbitrum: "42161", polygon: "137", polygon_pos: "137", avalanche: "43114", avax: "43114", optimism: "10" };
+const RISK_TTL = 5 * 60000;
+const riskCache = {};
+function riskKey(tok) { return (tok.network || "solana") + ":" + tok.address; }
+async function loadRisk(tok) {
+  if (!tok || !tok.address) return;
+  const key = riskKey(tok);
+  const c = riskCache[key];
+  if (c && (c.loading || Date.now() - c.at < RISK_TTL)) return;
+  riskCache[key] = { loading: true, at: Date.now(), data: c?.data || null, err: null };
+  try {
+    let data;
+    if ((tok.network || "solana") === "solana") data = parseRugcheck(await fetchJson(RUGCHECK + tok.address + "/report"));
+    else if (GOPLUS_CHAIN[tok.network]) {
+      const r = await fetchJson(GOPLUS + GOPLUS_CHAIN[tok.network] + "?contract_addresses=" + tok.address);
+      const row = r?.result ? (r.result[tok.address.toLowerCase()] || Object.values(r.result)[0]) : null;
+      if (!row) throw new Error("GoPlus has no data for this token");
+      data = parseGoplus(row);
+    } else throw new Error("No free risk source for " + chainLabel(tok.network));
+    riskCache[key] = { loading: false, at: Date.now(), data, err: null };
+  } catch (e) {
+    riskCache[key] = { loading: false, at: Date.now() - RISK_TTL + 60000, data: c?.data || null, err: e.message };
+  }
+  const el = document.getElementById("risk-card");
+  if (el && state.selected && riskKey(state.selected) === key) { clear(el); el.append(riskCardBody(state.selected)); }
+}
+function flag(level, label, value, note) { return { level, label, value, note }; }
+function pctText(v) { return v == null || !Number.isFinite(v) ? "—" : trimNum(v) + "%"; }
+function parseRugcheck(d) {
+  const flags = [];
+  const tokenInfo = d.token || {};
+  const mintA = "mintAuthority" in d ? d.mintAuthority : tokenInfo.mintAuthority;
+  const freezeA = "freezeAuthority" in d ? d.freezeAuthority : tokenInfo.freezeAuthority;
+  flags.push(mintA === undefined ? flag("unknown", "Mint authority", "—") : mintA ? flag("red", "Mint authority", "Active", "Dev can mint more supply") : flag("green", "Mint authority", "Renounced"));
+  flags.push(freezeA === undefined ? flag("unknown", "Freeze authority", "—") : freezeA ? flag("red", "Freeze authority", "Active", "Dev can freeze wallets") : flag("green", "Freeze authority", "Renounced"));
+  const markets = Array.isArray(d.markets) ? d.markets : [];
+  let best = null;
+  for (const m of markets) {
+    const lp = m.lp || {};
+    const liq = (num(lp.quoteUSD) || 0) + (num(lp.baseUSD) || 0);
+    if (!best || liq > best.liq) best = { liq, pct: num(lp.lpLockedPct), type: m.marketType };
+  }
+  const lpPct = best?.pct ?? num(d.lpLockedPct);
+  flags.push(lpPct == null ? flag("unknown", "LP locked/burned", "—")
+    : flag(lpPct >= 90 ? "green" : lpPct >= 50 ? "amber" : "red", "LP locked/burned", pctText(lpPct), best?.type ? "Main pool: " + best.type : ""));
+  const known = d.knownAccounts || {};
+  const holders = (Array.isArray(d.topHolders) ? d.topHolders : []).filter((x) => {
+    const k = known[x.owner] || known[x.address];
+    return !(k && /amm|pool|lock|burn/i.test(String(k.type || k.name || "")));
+  });
+  if (holders.length) {
+    const top10 = holders.slice(0, 10).reduce((s, x) => s + (num(x.pct) || 0), 0);
+    const top1 = num(holders[0].pct);
+    flags.push(flag(top10 > 50 ? "red" : top10 > 30 ? "amber" : "green", "Top 10 holders", pctText(top10), "Excludes known pool/locker accounts"));
+    flags.push(top1 == null ? flag("unknown", "Largest holder", "—") : flag(top1 > 20 ? "red" : top1 > 10 ? "amber" : "green", "Largest holder", pctText(top1)));
+    const ins = holders.filter((x) => x.insider).length;
+    if (ins) flags.push(flag("amber", "Insider wallets in top holders", String(ins)));
+  } else {
+    flags.push(flag("unknown", "Top 10 holders", "—"));
+  }
+  const gi = num(d.graphInsidersDetected);
+  if (gi != null) flags.push(flag(gi > 10 ? "red" : gi > 0 ? "amber" : "green", "Insider network wallets", String(gi)));
+  const fee = num(d.transferFee?.pct);
+  if (fee != null) flags.push(flag(fee > 0 ? "amber" : "green", "Transfer fee", pctText(fee)));
+  if (d.rugged === true) flags.unshift(flag("red", "RugCheck", "Marked rugged"));
+  for (const r of Array.isArray(d.risks) ? d.risks : []) {
+    flags.push(flag(r.level === "danger" ? "red" : r.level === "warn" ? "amber" : "unknown", r.name || "Risk", r.value || (r.level || ""), r.description || ""));
+  }
+  return {
+    source: "RugCheck", url: "https://rugcheck.xyz/tokens/" + d.mint, flags,
+    holders: num(d.totalHolders), score: num(d.score_normalised),
+  };
+}
+function parseGoplus(r) {
+  const b = (v) => (v === "1" ? true : v === "0" ? false : null);
+  const flags = [];
+  const yesNo = (v, label, badLevel, badText, goodText) => {
+    const x = b(v);
+    flags.push(x == null ? flag("unknown", label, "—") : x ? flag(badLevel, label, badText) : flag("green", label, goodText));
+  };
+  yesNo(r.is_honeypot, "Honeypot", "red", "Yes — cannot sell", "No");
+  const bt = num(r.buy_tax) != null ? num(r.buy_tax) * 100 : null;
+  const st = num(r.sell_tax) != null ? num(r.sell_tax) * 100 : null;
+  flags.push(bt == null ? flag("unknown", "Buy tax", "—") : flag(bt > 10 ? "red" : bt > 0 ? "amber" : "green", "Buy tax", pctText(bt)));
+  flags.push(st == null ? flag("unknown", "Sell tax", "—") : flag(st > 10 ? "red" : st > 0 ? "amber" : "green", "Sell tax", pctText(st)));
+  yesNo(r.is_mintable, "Mintable", "red", "Yes", "No");
+  yesNo(r.hidden_owner, "Hidden owner", "red", "Yes", "No");
+  yesNo(r.owner_change_balance, "Owner can change balances", "red", "Yes", "No");
+  yesNo(r.transfer_pausable, "Transfers pausable", "amber", "Yes", "No");
+  yesNo(r.is_proxy, "Proxy contract", "amber", "Yes", "No");
+  const os = b(r.is_open_source);
+  flags.push(os == null ? flag("unknown", "Source verified", "—") : os ? flag("green", "Source verified", "Yes") : flag("amber", "Source verified", "No"));
+  const holders = Array.isArray(r.holders) ? r.holders : [];
+  if (holders.length) {
+    const top10 = holders.filter((x) => String(x.is_locked) !== "1").slice(0, 10).reduce((s, x) => s + (num(x.percent) || 0) * 100, 0);
+    flags.push(flag(top10 > 50 ? "red" : top10 > 30 ? "amber" : "green", "Top 10 holders", pctText(top10), "Excludes locked holders"));
+  } else flags.push(flag("unknown", "Top 10 holders", "—"));
+  const lps = Array.isArray(r.lp_holders) ? r.lp_holders : [];
+  if (lps.length) {
+    const locked = lps.filter((x) => String(x.is_locked) === "1").reduce((s, x) => s + (num(x.percent) || 0) * 100, 0);
+    flags.push(flag(locked >= 90 ? "green" : locked >= 50 ? "amber" : "red", "LP locked", pctText(Math.min(locked, 100))));
+  } else flags.push(flag("unknown", "LP locked", "—"));
+  return { source: "GoPlus", url: "https://gopluslabs.io/token-security/", flags, holders: num(r.holder_count), score: null };
+}
+function renderRiskPanel(tok) {
+  const panel = h("div", { class: "panel risk-panel" });
+  panel.append(h("div", { class: "panel-head" },
+    h("h2", { text: "Holder risk" }),
+    h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
+    h("span", { class: "panel-updated", text: "RugCheck (Solana) · GoPlus (EVM) · cached 5 min" })));
+  const box = h("div", { id: "risk-card" }, riskCardBody(tok));
+  panel.append(box);
+  loadRisk(tok);
+  return panel;
+}
+function riskCardBody(tok) {
+  const c = riskCache[riskKey(tok)];
+  const wrap = h("div", { style: { padding: "8px 12px 10px" } });
+  if (!c || (c.loading && !c.data)) { wrap.append(h("div", { class: "sub", text: "Loading live safety data…" })); return wrap; }
+  if (!c.data) { wrap.append(h("div", { class: "sub", text: "Holder risk unavailable: " + (c.err || "no data") + ". All values shown as —." })); return wrap; }
+  const d = c.data;
+  const counts = { red: 0, amber: 0, green: 0 };
+  for (const f of d.flags) if (counts[f.level] != null) counts[f.level] += 1;
+  wrap.append(h("div", { class: "risk-summary" },
+    h("span", { class: "rflag red", text: counts.red + " red" }),
+    h("span", { class: "rflag amber", text: counts.amber + " amber" }),
+    h("span", { class: "rflag green", text: counts.green + " green" }),
+    h("span", { class: "sub", text: "Holders " + (d.holders == null ? "—" : formatHolders(d.holders)) + (d.score != null ? " · RugCheck score " + d.score : "") + " · as of " + formatEtClock(new Date(c.at)) + (c.err ? " · last refresh failed: " + c.err : "") }),
+    h("a", { href: d.url, target: "_blank", rel: "noreferrer", text: d.source })
+  ));
+  const grid = h("div", { class: "risk-grid" });
+  const order = { red: 0, amber: 1, unknown: 2, green: 3 };
+  for (const f of d.flags.slice().sort((a, b) => order[a.level] - order[b.level])) {
+    grid.append(h("div", { class: "risk-item " + f.level, title: f.note || "" },
+      h("span", { class: "dot" }), h("span", { class: "rl", text: f.label }), h("span", { class: "rv mono", text: f.value || "—" })));
+  }
+  wrap.append(grid);
+  wrap.append(h("div", { class: "sub", style: { marginTop: "6px" }, text: "Automated public checks, not a guarantee. Unknown values show —, never 0." }));
+  return wrap;
+}
+
+/* ======================================================================
+   Tracked smart wallets (from GMGN smart inflow) — live via public RPC
+   and matched against public GeckoTerminal trades
+   ====================================================================== */
+const SMART_WALLETS_JSON = "data/smart-wallets.json";
+const SOL_RPC = "https://solana-rpc.publicnode.com";
+const LS_RESOLVED = "smt-resolved-wallets-v1";
+const QUOTE_MINTS = {
+  So11111111111111111111111111111111111111112: "SOL",
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: "USDC",
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY4FHf5PxwM5G9iP: "USDT",
+};
+const TRACK_SIG_EVERY = 20000;   // one wallet's signatures every 20s
+const TRACK_RPC_GAP = 2500;      // at least 2.5s between RPC calls
+const TRACK_MAX_AGE_MS = 6 * 3600000;
+const tracked = {
+  list: [], at: null, err: null, byAbbr: new Map(), byFull: new Map(),
+  resolved: loadJson(LS_RESOLVED, {}), cursor: 0, lastSig: {}, seenSig: new Set(),
+  hits: new Map(), rpcAt: null, rpcErr: null, lastWallet: null, mintInfo: {}, polled: new Set(),
+};
+let rpcNextAt = 0;
+function abbrOf(w) { return w ? w.slice(0, 4) + "…" + w.slice(-4) : ""; }
+async function loadSmartWallets() {
+  try {
+    const d = await fetchJson(SMART_WALLETS_JSON, { cacheBust: true });
+    tracked.list = Array.isArray(d?.wallets) ? d.wallets : [];
+    tracked.meta = d;
+    tracked.byAbbr = new Map();
+    tracked.byFull = new Map();
+    for (const w of tracked.list) {
+      const full = w.walletFull || tracked.resolved[w.prefix + "…" + w.suffix] || null;
+      w._full = full;
+      tracked.byAbbr.set(w.prefix + "…" + w.suffix, w);
+      if (full) tracked.byFull.set(full, w);
+    }
+    tracked.at = new Date(); tracked.err = null;
+  } catch (e) { tracked.err = e.message; }
+  if (onTrackedView()) renderWorkspace();
+}
+function onTrackedView() { return isMobile() ? state.mobileTab === "wallets" : state.nav === "tracked"; }
+function trackedEntryFor(full) {
+  if (!full) return null;
+  if (tracked.byFull.has(full)) return tracked.byFull.get(full);
+  const w = tracked.byAbbr.get(abbrOf(full));
+  if (w && !w._full) {
+    // Learn the full address from a public trade whose wallet matches the GMGN prefix…suffix.
+    w._full = full; w._learned = true;
+    tracked.byFull.set(full, w);
+    tracked.resolved[w.prefix + "…" + w.suffix] = full;
+    saveJson(LS_RESOLVED, tracked.resolved);
+  }
+  return w && w._full === full ? w : null;
+}
+function addTrackedHit(hit) {
+  if (tracked.hits.has(hit.key)) return false;
+  tracked.hits.set(hit.key, hit);
+  const cutoff = Date.now() - TRACK_MAX_AGE_MS;
+  const rows = [...tracked.hits.values()].filter((r) => new Date(r.t).getTime() >= cutoff).sort((a, b) => new Date(b.t) - new Date(a.t)).slice(0, 200);
+  tracked.hits = new Map(rows.map((r) => [r.key, r]));
+  if (hit.side === "buy" && new Date(hit.t).getTime() > PAGE_START - 60000) {
+    notifyAlert("tracked", "Tracked smart wallet buy", hit.walletAbbr + " bought " + (hit.symbol || shortCa(hit.mint)) + (hit.usd != null ? " for " + formatUsd(hit.usd, "size") : ""));
+  }
+  return true;
+}
+function trackTradeMatch(a, tok, net) {
+  const full = a.tx_from_address;
+  const w = trackedEntryFor(full);
+  if (!w) return;
+  addTrackedHit({
+    key: "sig:" + a.tx_hash, t: a.block_timestamp, wallet: full, walletAbbr: w.wallet, entry: w,
+    side: a.kind === "sell" ? "sell" : "buy", usd: num(a.volume_in_usd), symbol: tok.symbol, mint: tok.address,
+    network: tok.network, net, pool: tok.pool, tx: a.tx_hash, via: "Public trade match",
+  });
+  if (onTrackedView()) refreshTrackedBody();
+}
+async function rpc(method, params) {
+  const wait = rpcNextAt - Date.now();
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+  rpcNextAt = Date.now() + TRACK_RPC_GAP;
+  if (hostBlocked(SOL_RPC)) throw new Error("RPC backing off");
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
+  let res;
+  try {
+    res = await fetch(SOL_RPC, { method: "POST", signal: ctrl.signal, headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
+  } catch (e) {
+    noteBackoff(SOL_RPC, 30000);
+    throw new Error("RPC unreachable or rate limited; backing off");
+  } finally { clearTimeout(timer); }
+  if (res.status === 429 || res.status === 403) { noteBackoff(SOL_RPC, 60000); throw new Error("RPC " + res.status + "; backing off"); }
+  if (!res.ok) throw new Error("RPC HTTP " + res.status);
+  const j = await res.json();
+  if (j.error) throw new Error("RPC " + (j.error.message || j.error.code));
+  return j.result;
+}
+function solPrice() {
+  const m = state.majors.find((x) => x.symbol === "SOL");
+  return m?.price ?? null;
+}
+function decodeSwap(tx, wallet) {
+  if (!tx || !tx.meta || tx.meta.err) return null;
+  const keys = (tx.transaction?.message?.accountKeys || []).map((k) => (typeof k === "string" ? k : k.pubkey));
+  const i = keys.indexOf(wallet);
+  let solDelta = 0;
+  if (i >= 0) {
+    solDelta = ((tx.meta.postBalances?.[i] ?? 0) - (tx.meta.preBalances?.[i] ?? 0)) / 1e9;
+    if (i === 0) solDelta += (tx.meta.fee || 0) / 1e9; // ignore the network fee
+  }
+  const deltas = {};
+  const add = (arr, sign) => {
+    for (const b of arr || []) {
+      if (b.owner !== wallet) continue;
+      const amt = num(b.uiTokenAmount?.uiAmountString ?? b.uiTokenAmount?.uiAmount) || 0;
+      deltas[b.mint] = (deltas[b.mint] || 0) + sign * amt;
+    }
+  };
+  add(tx.meta.preTokenBalances, -1);
+  add(tx.meta.postTokenBalances, 1);
+  let quoteUsd = 0;
+  const sp = solPrice();
+  if (deltas[Object.keys(QUOTE_MINTS)[0]]) { solDelta += deltas[Object.keys(QUOTE_MINTS)[0]]; delete deltas[Object.keys(QUOTE_MINTS)[0]]; }
+  for (const m of ["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY4FHf5PxwM5G9iP"]) {
+    if (deltas[m]) { quoteUsd += deltas[m]; delete deltas[m]; }
+  }
+  const quoteDelta = (sp != null ? solDelta * sp : 0) + quoteUsd;
+  const tokens = Object.entries(deltas).filter(([, v]) => Math.abs(v) > 0);
+  if (!tokens.length) return null;
+  tokens.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const [mint, amt] = tokens[0];
+  const side = amt > 0 ? "buy" : "sell";
+  const usd = sp == null && !quoteUsd ? null : Math.abs(quoteDelta) || null;
+  return { mint, amount: Math.abs(amt), side, usd, sol: Math.abs(solDelta) };
+}
+async function ensureMintInfo(mints) {
+  const need = mints.filter((m) => !tracked.mintInfo[m]);
+  if (!need.length) return;
+  try {
+    const pairs = await fetchJson(DS + "/tokens/v1/solana/" + need.slice(0, 30).join(","));
+    for (const p of Array.isArray(pairs) ? pairs : []) {
+      const a = p.baseToken?.address;
+      if (a && !tracked.mintInfo[a]) tracked.mintInfo[a] = { symbol: p.baseToken.symbol, pool: p.pairAddress, price: num(p.priceUsd) };
+    }
+  } catch { /* symbols optional */ }
+  for (const m of need) if (!tracked.mintInfo[m]) tracked.mintInfo[m] = { symbol: null };
+}
+async function trackedTick() {
+  const wallets = tracked.list.filter((w) => w._full);
+  if (!wallets.length) return;
+  const w = wallets[tracked.cursor % wallets.length];
+  tracked.cursor = (tracked.cursor + 1) % wallets.length;
+  try {
+    const sigs = await rpc("getSignaturesForAddress", [w._full, { limit: 5 }]);
+    tracked.rpcAt = new Date(); tracked.rpcErr = null; tracked.lastWallet = w.wallet; tracked.polled.add(w._full);
+    const firstPoll = !(w._full in tracked.lastSig);
+    const fresh = (sigs || []).filter((s) => !s.err && s.blockTime && !tracked.seenSig.has(s.signature)
+      && Date.now() - s.blockTime * 1000 < (firstPoll ? 3600000 : TRACK_MAX_AGE_MS)).slice(0, firstPoll ? 2 : 3);
+    if (sigs && sigs[0]) tracked.lastSig[w._full] = sigs[0].signature;
+    const decoded = [];
+    for (const s of fresh) {
+      tracked.seenSig.add(s.signature);
+      if (tracked.hits.has("sig:" + s.signature)) continue;
+      const tx = await rpc("getTransaction", [s.signature, { encoding: "jsonParsed", maxSupportedTransactionVersion: 1, commitment: "confirmed" }]);
+      const sw = decodeSwap(tx, w._full);
+      if (sw) decoded.push({ s, sw });
+    }
+    if (decoded.length) await ensureMintInfo(decoded.map((x) => x.sw.mint));
+    for (const { s, sw } of decoded) {
+      const info = tracked.mintInfo[sw.mint] || {};
+      addTrackedHit({
+        key: "sig:" + s.signature, t: new Date(s.blockTime * 1000).toISOString(), wallet: w._full, walletAbbr: w.wallet, entry: w,
+        side: sw.side, usd: sw.usd, symbol: info.symbol || null, mint: sw.mint, network: "solana", net: "solana",
+        pool: info.pool || "", tx: s.signature, via: "Solana RPC",
+      });
+    }
+  } catch (e) { tracked.rpcErr = e.message; }
+  if (onTrackedView()) refreshTrackedBody();
+}
+function startTrackedPollers() {
+  loadSmartWallets();
+  setInterval(() => { if (!document.hidden) loadSmartWallets(); }, 10 * 60000);
+  const loop = async () => {
+    if (!document.hidden && !hostBlocked(SOL_RPC)) await trackedTick();
+    setTimeout(loop, onTrackedView() ? TRACK_SIG_EVERY : TRACK_SIG_EVERY * 2);
+  };
+  setTimeout(loop, 6000);
+}
+function trackedStamp() {
+  const full = tracked.list.filter((w) => w._full).length;
+  const bits = [stamp("LIVE", tracked.rpcAt, tracked.rpcErr)];
+  bits.push(full + "/" + tracked.list.length + " wallets with full address · polled " + tracked.polled.size);
+  if (tracked.lastWallet) bits.push("last " + tracked.lastWallet);
+  return bits.join(" · ");
+}
+function refreshTrackedBody() {
+  const up = document.getElementById("tracked-updated");
+  if (up) up.textContent = trackedStamp();
+  const body = document.getElementById("tracked-body");
+  if (!body) return;
+  const st = body.scrollTop; clear(body); body.append(trackedBody()); body.scrollTop = st;
+}
+function renderTracked() {
+  const wrap = h("div", { class: "stack", style: { maxWidth: "1200px" } });
+  wrap.append(h("h1", { class: "page-head", text: "Tracked Wallets" }));
+  wrap.append(h("div", { class: "callout info" },
+    h("strong", { text: "Live activity of wallets GMGN flagged as smart inflow. " }),
+    "The list comes from GMGN Smart Net Inflow captures (" + (tracked.meta?.updatedET ? "list updated " + tracked.meta.updatedET : "see data/smart-wallets.json") + "). GMGN shows wallets shortened, so only wallets whose full address is known can be polled on-chain; the rest are matched when their prefix…suffix appears in public GeckoTerminal trades, and are then polled too. Swaps are decoded from public Solana RPC balance changes, so sizes are estimates."
+  ));
+  const panel = h("div", { class: "panel" });
+  panel.append(
+    h("div", { class: "panel-head" }, h("h2", { text: "Tracked wallet activity" }),
+      h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
+      h("span", { class: "panel-updated", id: "tracked-updated", text: trackedStamp() })),
+    h("div", { class: "panel-body", id: "tracked-body" }, trackedBody())
+  );
+  wrap.append(panel);
+  const lst = h("div", { class: "panel" });
+  lst.append(h("div", { class: "panel-head" }, h("h2", { text: "Watched list" }), h("span", { class: "pill snap", text: "from GMGN captures" })));
+  const table = h("table", { class: "data" });
+  table.append(h("thead", {}, h("tr", {}, h("th", { text: "Wallet" }), h("th", { class: "num", text: "Snapshots" }), h("th", { class: "num", text: "Buys / Sells" }), h("th", { text: "Tokens" }), h("th", { text: "First seen" }), h("th", { text: "Live status" }))));
+  const tb = h("tbody");
+  for (const w of tracked.list) {
+    tb.append(h("tr", {},
+      h("td", {}, w._full ? h("a", { class: "mono", href: "https://solscan.io/account/" + w._full, target: "_blank", rel: "noreferrer", text: w.wallet }) : h("span", { class: "mono", text: w.wallet })),
+      h("td", { class: "num", text: String(w.snapshots ?? "—") }),
+      h("td", { class: "num", text: (w.buys ?? "—") + " / " + (w.sells ?? "—") }),
+      h("td", { class: "sub", text: (w.tokens || []).slice(0, 5).join(", ") }),
+      h("td", { class: "sub", text: w.firstSeenET || "—" }),
+      h("td", { class: "sub", text: w._full ? (w._learned ? "Polling (address learned from a public trade)" : "Polling on-chain") : "Waiting for a public-trade match" })
+    ));
+  }
+  table.append(tb);
+  lst.append(table);
+  wrap.append(lst);
+  return wrap;
+}
+function trackedBody() {
+  const box = h("div");
+  if (tracked.err && !tracked.list.length) { box.append(h("div", { class: "empty", text: "Tracked wallet list unavailable: " + tracked.err })); return box; }
+  const rows = [...tracked.hits.values()];
+  if (!rows.length) { box.append(h("div", { class: "empty", text: tracked.list.length ? "No swaps from tracked wallets yet in the last 6 hours. Wallets are checked one at a time, about every 20 seconds while this tab is open." : "Loading tracked wallet list…" })); return box; }
+  if (isMobile()) {
+    for (const r of rows) box.append(h("div", { class: "token-card", style: { marginBottom: "8px", cursor: "default" } },
+      h("div", { class: "top" },
+        h("div", {},
+          h("div", { class: "name-row" }, h("span", { class: "sym", text: r.symbol || shortCa(r.mint) }),
+            h("span", { class: r.side === "buy" ? "chip up" : "chip down", text: r.side === "buy" ? "Buy" : "Sell" }),
+            h("span", { class: "chip whale", text: "tracked" })),
+          h("div", { class: "sub" }, formatEtClock(r.t) + " · ", trackedWalletLink(r), " · " + r.via)),
+        h("div", { class: "right" }, h("div", { class: "mono", style: { fontSize: "15px", fontWeight: "600" }, text: r.usd == null ? "—" : formatUsd(r.usd, "size") }))),
+      h("div", { class: "actions" }, trackedLinks(r))));
+    return box;
+  }
+  const table = h("table", { class: "data" });
+  table.append(h("thead", {}, h("tr", {}, h("th", { text: "Time" }), h("th", { text: "Wallet" }), h("th", { text: "Token" }), h("th", { text: "Side" }), h("th", { class: "num", text: "Size" }), h("th", { text: "Source" }), h("th", { text: "Links" }))));
+  const tb = h("tbody");
+  for (const r of rows) {
+    tb.append(h("tr", {},
+      h("td", { class: "mono", text: formatEtClock(r.t) }),
+      h("td", {}, trackedWalletLink(r), h("span", { class: "chip whale", text: "GMGN smart inflow" })),
+      h("td", {}, h("a", { href: "#", text: r.symbol || shortCa(r.mint), onclick: (e) => { e.preventDefault(); resolveAndSelect("solana", r.mint); } })),
+      h("td", { class: r.side === "buy" ? "side-buy" : "side-sell", text: r.side === "buy" ? "Buy" : "Sell" }),
+      h("td", { class: "num", text: r.usd == null ? "—" : formatUsd(r.usd, "size") }),
+      h("td", { class: "sub", text: r.via }),
+      h("td", {}, trackedLinks(r))
+    ));
+  }
+  table.append(tb);
+  box.append(table);
+  return box;
+}
+function trackedWalletLink(r) {
+  return h("a", { class: "mono", href: "https://solscan.io/account/" + r.wallet, target: "_blank", rel: "noreferrer", text: r.walletAbbr || shortCa(r.wallet) });
+}
+function trackedLinks(r) {
+  const f = h("span", { style: { display: "inline-flex", gap: "8px", flexWrap: "wrap" } });
+  f.append(h("a", { href: "https://dexscreener.com/solana/" + r.mint, target: "_blank", rel: "noreferrer", text: "DexScreener" }));
+  f.append(h("a", { href: "https://gmgn.ai/sol/token/" + r.mint, target: "_blank", rel: "noreferrer", text: "GMGN" }));
+  if (r.tx) f.append(h("a", { href: "https://solscan.io/tx/" + r.tx, target: "_blank", rel: "noreferrer", text: "Tx" }));
+  return f;
+}
+
 function startPollers() {
   for (const p of pollers) clearInterval(p);
   pollers = [];
@@ -2084,6 +2608,7 @@ function init() {
   });
   startPollers();
   startWhalePollers();
+  startTrackedPollers();
   mq.addEventListener("change", () => renderAll());
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
