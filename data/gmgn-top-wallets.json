@@ -1,0 +1,243 @@
+{
+  "asOfET": "2026-11-16T17:45:04-05:00",
+  "wallets": [
+    {
+      "rank": 1,
+      "walletFull": "9HvhSPXKAgsgvw3264KtQmpuTm91Urr93SV9kAsioRLU",
+      "label": "",
+      "tags": [
+        "FOMO",
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$18.8K",
+      "pnl7dPct": "+32.1%",
+      "winRate7d": "39.1%",
+      "trades7d": "121 / 161",
+      "pnl30dUsd": null,
+      "lastActive": "58m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 2,
+      "walletFull": "9TkT5U6LFDETnjjnBabVe3hSM4a7qUUjJ8eTAi7fFbvR",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$17.1K",
+      "pnl7dPct": "+14.6%",
+      "winRate7d": "37.5%",
+      "trades7d": "109 / 467",
+      "pnl30dUsd": null,
+      "lastActive": "57m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 3,
+      "walletFull": "AwDAD5VkxpKL3fhTcsxWCTe8kfbbL8LgE4QSB76LwpLU",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$16.9K",
+      "pnl7dPct": "+8.3%",
+      "winRate7d": "34.7%",
+      "trades7d": "687 / 898",
+      "pnl30dUsd": null,
+      "lastActive": "1h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 4,
+      "walletFull": "HjuSthanedLrVgPBF2CkwPf9FCDinLj7r3i3jeaefSve",
+      "label": "",
+      "tags": [
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$15.5K",
+      "pnl7dPct": "+22.5%",
+      "winRate7d": "63.2%",
+      "trades7d": "1,119 / 607",
+      "pnl30dUsd": null,
+      "lastActive": "57m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 5,
+      "walletFull": "9x6A5CFKKFXnAVQCXt8ocKggvfrNKJc7PPL9xYjzEE6n",
+      "label": "",
+      "tags": [
+        "axiom",
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$13.9K",
+      "pnl7dPct": "+91.5%",
+      "winRate7d": "38.5%",
+      "trades7d": "59 / 103",
+      "pnl30dUsd": null,
+      "lastActive": "15h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 6,
+      "walletFull": "D2rcDMoWyayhMAPUdoHKoJz3syY6MHKm4hz4564jhetE",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$13.8K",
+      "pnl7dPct": "+45.8%",
+      "winRate7d": "44.9%",
+      "trades7d": "71 / 345",
+      "pnl30dUsd": null,
+      "lastActive": "2h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 7,
+      "walletFull": "7NnaXghjuU92gM9kmwXysqa5HboyZuR2LTaBnvazFxSH",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$11.7K",
+      "pnl7dPct": "+31.6%",
+      "winRate7d": "59.5%",
+      "trades7d": "171 / 341",
+      "pnl30dUsd": null,
+      "lastActive": "58m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 8,
+      "walletFull": "6qudAN2kV8mtCcYJxb5QQ6Vr15itdHHdeVbYm99NKMhy",
+      "label": "",
+      "tags": [
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$9,247.1",
+      "pnl7dPct": "+6%",
+      "winRate7d": "45.1%",
+      "trades7d": "835 / 641",
+      "pnl30dUsd": null,
+      "lastActive": "1h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 9,
+      "walletFull": "AZ1SxJ6uXriFd7KvQB2PGPvncRUPvcgUzyzzrKSE8KND",
+      "label": "",
+      "tags": [
+        "axiom",
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$9,070",
+      "pnl7dPct": "+15.5%",
+      "winRate7d": "42.9%",
+      "trades7d": "390 / 298",
+      "pnl30dUsd": null,
+      "lastActive": "5d ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 10,
+      "walletFull": "9UorfMbrGdhJHAe6BBC36jupESyRXrtGXCwcCKZTtitT",
+      "label": "",
+      "tags": [
+        "axiom",
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$8,752.3",
+      "pnl7dPct": "+10.4%",
+      "winRate7d": "50%",
+      "trades7d": "129 / 208",
+      "pnl30dUsd": null,
+      "lastActive": "16h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 11,
+      "walletFull": "92Yv6GtCZ8iuz986z5kBrUfyQHFLfvNXMVMNYfZt3quZ",
+      "label": "",
+      "tags": [
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$7,951.1",
+      "pnl7dPct": "+11.6%",
+      "winRate7d": "41%",
+      "trades7d": "376 / 494",
+      "pnl30dUsd": null,
+      "lastActive": "58m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 12,
+      "walletFull": "9mRwp4SVQd2BQyj1rdh61qxia51AnSNa9JjqRy8a36LU",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$7,464.1",
+      "pnl7dPct": "+4.1%",
+      "winRate7d": "37.4%",
+      "trades7d": "707 / 987",
+      "pnl30dUsd": null,
+      "lastActive": "1h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 13,
+      "walletFull": "AcZhRo2BTM5BN4HD9jxf6w7GrjjqDwr5nTZRkRfid2nm",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$7,456.4",
+      "pnl7dPct": "+9.7%",
+      "winRate7d": "37.3%",
+      "trades7d": "440 / 634",
+      "pnl30dUsd": null,
+      "lastActive": "2h ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 14,
+      "walletFull": "HHL2FnwJJiR1UPk9FeoyUCTiwsqtzPrgMZfKGyQJns1z",
+      "label": "",
+      "tags": [
+        "axiom",
+        "Smart Degen"
+      ],
+      "pnl7dUsd": "+$7,252.2",
+      "pnl7dPct": "+12.6%",
+      "winRate7d": "39%",
+      "trades7d": "388 / 293",
+      "pnl30dUsd": null,
+      "lastActive": "5d ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    },
+    {
+      "rank": 15,
+      "walletFull": "9mYd1j5gf1xZA4ipayAkKdTqhqTyXxKNFqZDaVbVNaxq",
+      "label": "",
+      "tags": [
+        "Smart Degen",
+        "axiom"
+      ],
+      "pnl7dUsd": "+$7,058.9",
+      "pnl7dPct": "+59.9%",
+      "winRate7d": "38.7%",
+      "trades7d": "97 / 214",
+      "pnl30dUsd": null,
+      "lastActive": "58m ago",
+      "sourceUrl": "https://gmgn.ai/rank?chain=sol&tab=smart_degen"
+    }
+  ]
+}

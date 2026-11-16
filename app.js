@@ -2000,7 +2000,7 @@ function whaleBody() {
       h("td", { text: r.chainLabel }),
       h("td", { class: r.side === "buy" ? "side-buy" : "side-sell", text: r.side === "buy" ? "Buy" : "Sell" }),
       h("td", { class: "num", text: formatUsd(r.usd, "size") }),
-      h("td", {}, walletLink(r), isRepeat ? h("span", { class: "chip whale", text: "repeat whale ×" + s.buys }) : null, tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: "tracked smart wallet" }) : null),
+      h("td", {}, walletLink(r), isRepeat ? h("span", { class: "chip whale", text: "repeat whale ×" + s.buys }) : null, tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: tracked.byFull.get(r.wallet).top ? "top-15 profitable wallet" : "tracked smart wallet" }) : null),
       h("td", {}, tokenLinks(r))
     ));
   }
@@ -2029,7 +2029,7 @@ function whaleCard(r, s) {
           h("span", { class: "chip", text: r.chainLabel }),
           h("span", { class: r.side === "buy" ? "chip up" : "chip down", text: r.side === "buy" ? "Buy" : "Sell" }),
           isRepeat ? h("span", { class: "chip whale", text: "repeat ×" + s.buys }) : null,
-          tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: "tracked" }) : null
+          tracked.byFull.has(r.wallet) ? h("span", { class: "chip tracked", text: tracked.byFull.get(r.wallet).top ? "top-15 profitable" : "tracked" }) : null
         ),
         h("div", { class: "sub" }, formatEtClock(r.t) + " · ", walletLink(r))
       ),
@@ -2135,7 +2135,7 @@ function renderNotifyPanel() {
     tog("sound", "Play a sound", (v) => { notifyCfg.sound = v; saveNotify(); if (v) beep("whale"); renderAll(); }),
     tog("browser", "Browser notifications" + (typeof Notification !== "undefined" ? " (" + Notification.permission + ")" : " (unsupported)"), setBrowserNotify),
     tog("whale", "Whale-flow buys at or above your Whale Flow minimum"),
-    tog("tracked", "Tracked smart wallet buys"),
+    tog("tracked", "Top-15 profitable / tracked wallet buys"),
     tog("price", "Watchlist / custom price alerts")
   );
   panel.append(body, h("div", { class: "panel-note", text: "Saved in this browser. Throttled to one alert per type every 20 seconds and 8 per 5 minutes; extra alerts are counted, not lost from the feeds. Alerts only run while this site is open in a tab." }));
@@ -2299,6 +2299,7 @@ function riskCardBody(tok) {
    and matched against public GeckoTerminal trades
    ====================================================================== */
 const SMART_WALLETS_JSON = "data/smart-wallets.json";
+const TOP_WALLETS_JSON = "data/gmgn-top-wallets.json";
 const SOL_RPC = "https://solana-rpc.publicnode.com";
 const LS_RESOLVED = "smt-resolved-wallets-v1";
 const QUOTE_MINTS = {
@@ -2312,6 +2313,7 @@ const TRACK_MAX_AGE_MS = 6 * 3600000;
 const tracked = {
   list: [], at: null, err: null, byAbbr: new Map(), byFull: new Map(),
   resolved: loadJson(LS_RESOLVED, {}), cursor: 0, lastSig: {}, seenSig: new Set(),
+  top: [], topMeta: null, topErr: null, topCursor: 0,
   hits: new Map(), rpcAt: null, rpcErr: null, lastWallet: null, mintInfo: {}, polled: new Set(),
 };
 let rpcNextAt = 0;
@@ -2331,7 +2333,25 @@ async function loadSmartWallets() {
     }
     tracked.at = new Date(); tracked.err = null;
   } catch (e) { tracked.err = e.message; }
+  // Primary set: GMGN's top 15 smart wallets by 7D PnL (full addresses). These win any overlap.
+  try {
+    const t = await fetchJson(TOP_WALLETS_JSON, { cacheBust: true });
+    const rows = (Array.isArray(t?.wallets) ? t.wallets : [])
+      .filter((w) => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w.walletFull || ""))
+      .sort((a, b) => (a.rank ?? 99) - (b.rank ?? 99)).slice(0, 15);
+    tracked.top = rows.map((w) => ({ ...w, wallet: abbrOf(w.walletFull), _full: w.walletFull, top: true }));
+    tracked.topMeta = t; tracked.topErr = null;
+  } catch (e) { tracked.topErr = e.message; }
+  for (const w of tracked.top) tracked.byFull.set(w._full, w);
   if (onTrackedView()) renderWorkspace();
+}
+function trackedTag(w) { return w && w.top ? "top-15 profitable wallet" : "GMGN smart inflow"; }
+function fmtEtStamp(v) {
+  if (!v) return "—";
+  if (/ET/.test(v)) return v;
+  const d = new Date(v);
+  if (isNaN(d)) return v;
+  return d.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit", month: "short", day: "numeric", year: "numeric" }).replace(/, (\d{4}), /, ", $1 · ") + " ET";
 }
 function onTrackedView() { return isMobile() ? state.mobileTab === "wallets" : state.nav === "tracked"; }
 function trackedEntryFor(full) {
@@ -2354,7 +2374,7 @@ function addTrackedHit(hit) {
   const rows = [...tracked.hits.values()].filter((r) => new Date(r.t).getTime() >= cutoff).sort((a, b) => new Date(b.t) - new Date(a.t)).slice(0, 200);
   tracked.hits = new Map(rows.map((r) => [r.key, r]));
   if (hit.side === "buy" && new Date(hit.t).getTime() > PAGE_START - 60000) {
-    notifyAlert("tracked", "Tracked smart wallet buy", hit.walletAbbr + " bought " + (hit.symbol || shortCa(hit.mint)) + (hit.usd != null ? " for " + formatUsd(hit.usd, "size") : ""));
+    notifyAlert("tracked", hit.entry?.top ? "Top-15 profitable wallet buy" : "Tracked smart wallet buy", hit.walletAbbr + " bought " + (hit.symbol || shortCa(hit.mint)) + (hit.usd != null ? " for " + formatUsd(hit.usd, "size") : ""));
   }
   return true;
 }
@@ -2441,10 +2461,12 @@ async function ensureMintInfo(mints) {
   for (const m of need) if (!tracked.mintInfo[m]) tracked.mintInfo[m] = { symbol: null };
 }
 async function trackedTick() {
-  const wallets = tracked.list.filter((w) => w._full);
+  const useTop = tracked.top.length > 0;
+  const wallets = useTop ? tracked.top : tracked.list.filter((w) => w._full);
   if (!wallets.length) return;
-  const w = wallets[tracked.cursor % wallets.length];
-  tracked.cursor = (tracked.cursor + 1) % wallets.length;
+  const key = useTop ? "topCursor" : "cursor";
+  const w = wallets[tracked[key] % wallets.length];
+  tracked[key] = (tracked[key] + 1) % wallets.length;
   try {
     const sigs = await rpc("getSignaturesForAddress", [w._full, { limit: 5 }]);
     tracked.rpcAt = new Date(); tracked.rpcErr = null; tracked.lastWallet = w.wallet; tracked.polled.add(w._full);
@@ -2484,7 +2506,8 @@ function startTrackedPollers() {
 function trackedStamp() {
   const full = tracked.list.filter((w) => w._full).length;
   const bits = [stamp("LIVE", tracked.rpcAt, tracked.rpcErr)];
-  bits.push(full + "/" + tracked.list.length + " wallets with full address · polled " + tracked.polled.size);
+  if (tracked.top.length) bits.push("top " + tracked.top.length + " polled on-chain (" + tracked.top.filter((w) => tracked.polled.has(w._full)).length + " checked so far) · " + full + " smart-inflow wallets matched via public trades");
+  else bits.push(full + "/" + tracked.list.length + " wallets with full address · polled " + tracked.polled.size);
   if (tracked.lastWallet) bits.push("last " + tracked.lastWallet);
   return bits.join(" · ");
 }
@@ -2499,8 +2522,8 @@ function renderTracked() {
   const wrap = h("div", { class: "stack", style: { maxWidth: "1200px" } });
   wrap.append(h("h1", { class: "page-head", text: "Tracked Wallets" }));
   wrap.append(h("div", { class: "callout info" },
-    h("strong", { text: "Live activity of wallets GMGN flagged as smart inflow. " }),
-    "The list comes from GMGN Smart Net Inflow captures (" + (tracked.meta?.updatedET ? "list updated " + tracked.meta.updatedET : "see data/smart-wallets.json") + "). GMGN shows wallets shortened, so only wallets whose full address is known can be polled on-chain; the rest are matched when their prefix…suffix appears in public GeckoTerminal trades, and are then polled too. Swaps are decoded from public Solana RPC balance changes, so sizes are estimates."
+    h("strong", { text: "Live activity of GMGN's top 15 smart wallets by 7D PnL. " }),
+    "These 15 are polled on-chain one at a time in rank order (about every 20s while this tab is open, 40s otherwise) through a public Solana RPC. The secondary GMGN Smart Net Inflow wallets (" + (tracked.meta?.updatedET ? "list updated " + tracked.meta.updatedET : "data/smart-wallets.json") + ") are not polled; they show up only when they appear in the public GeckoTerminal trades this site already scans. Swaps are decoded from balance changes, so sizes are estimates. PnL and win rate are GMGN's figures at capture, not live."
   ));
   const panel = h("div", { class: "panel" });
   panel.append(
@@ -2510,8 +2533,9 @@ function renderTracked() {
     h("div", { class: "panel-body", id: "tracked-body" }, trackedBody())
   );
   wrap.append(panel);
+  wrap.append(renderTopWallets());
   const lst = h("div", { class: "panel" });
-  lst.append(h("div", { class: "panel-head" }, h("h2", { text: "Watched list" }), h("span", { class: "pill snap", text: "from GMGN captures" })));
+  lst.append(h("div", { class: "panel-head" }, h("h2", { text: "Secondary: GMGN smart-inflow wallets" }), h("span", { class: "pill snap", text: "matched via public trades only" })));
   const table = h("table", { class: "data" });
   table.append(h("thead", {}, h("tr", {}, h("th", { text: "Wallet" }), h("th", { class: "num", text: "Snapshots" }), h("th", { class: "num", text: "Buys / Sells" }), h("th", { text: "Tokens" }), h("th", { text: "First seen" }), h("th", { text: "Live status" }))));
   const tb = h("tbody");
@@ -2522,13 +2546,39 @@ function renderTracked() {
       h("td", { class: "num", text: (w.buys ?? "—") + " / " + (w.sells ?? "—") }),
       h("td", { class: "sub", text: (w.tokens || []).slice(0, 5).join(", ") }),
       h("td", { class: "sub", text: w.firstSeenET || "—" }),
-      h("td", { class: "sub", text: w._full ? (w._learned ? "Polling (address learned from a public trade)" : "Polling on-chain") : "Waiting for a public-trade match" })
+      h("td", { class: "sub", text: w._full ? (w._learned ? "Address learned from a public trade · matched via trades" : "Matched via public trades") : "Waiting for a public-trade match" })
     ));
   }
   table.append(tb);
   lst.append(table);
   wrap.append(lst);
   return wrap;
+}
+function renderTopWallets() {
+  const p = h("div", { class: "panel" });
+  const asOf = fmtEtStamp(tracked.topMeta?.asOfET);
+  p.append(h("div", { class: "panel-head" }, h("h2", { text: "Top 15 by 7D PnL (GMGN, as of " + asOf + ")" }), h("span", { class: "pill snap", text: "GMGN snapshot" })));
+  if (!tracked.top.length) { p.append(h("div", { class: "panel-body" }, h("div", { class: "empty", text: tracked.topErr ? "Top wallet list unavailable: " + tracked.topErr : "Loading top wallets…" }))); return p; }
+  const mob = isMobile();
+  const table = h("table", { class: "data" });
+  const head = mob ? ["#", "Wallet", "7D PnL", "Win"] : ["#", "Wallet", "Label", "7D PnL", "Win rate (7D)", "Trades 7D (buy / sell)", "Last active at capture", "Live status"];
+  table.append(h("thead", {}, h("tr", {}, ...head.map((t, i) => h("th", { class: /PnL|Win|Trades/.test(t) ? "num" : "", text: t })))));
+  const tb = h("tbody");
+  for (const w of tracked.top) {
+    const link = h("a", { class: "mono", href: "https://gmgn.ai/sol/address/" + w._full, target: "_blank", rel: "noreferrer", text: w.wallet });
+    const label = w.label || (w.tags || []).join(", ") || "—";
+    const pnl = (w.pnl7dUsd || "—") + (w.pnl7dPct ? " (" + w.pnl7dPct + ")" : "");
+    const status = tracked.polled.has(w._full) ? "Polling on-chain" : "Queued for on-chain polling";
+    const cells = mob
+      ? [h("td", { text: String(w.rank ?? "—") }), h("td", {}, link, h("div", { class: "sub", text: label })), h("td", { class: "num side-buy", text: pnl }), h("td", { class: "num", text: w.winRate7d || "—" })]
+      : [h("td", { text: String(w.rank ?? "—") }), h("td", {}, link, " ", h("a", { class: "sub", href: "https://solscan.io/account/" + w._full, target: "_blank", rel: "noreferrer", text: "Solscan" })),
+         h("td", { class: "sub", text: label }), h("td", { class: "num side-buy", text: pnl }), h("td", { class: "num", text: w.winRate7d || "—" }),
+         h("td", { class: "num", text: w.trades7d || "—" }), h("td", { class: "sub", text: w.lastActive || "—" }), h("td", { class: "sub", text: status })];
+    tb.append(h("tr", {}, ...cells));
+  }
+  table.append(tb);
+  p.append(h("div", { class: "panel-body", style: { overflowX: "auto" } }, table));
+  return p;
 }
 function trackedBody() {
   const box = h("div");
@@ -2541,7 +2591,7 @@ function trackedBody() {
         h("div", {},
           h("div", { class: "name-row" }, h("span", { class: "sym", text: r.symbol || shortCa(r.mint) }),
             h("span", { class: r.side === "buy" ? "chip up" : "chip down", text: r.side === "buy" ? "Buy" : "Sell" }),
-            h("span", { class: "chip whale", text: "tracked" })),
+            h("span", { class: "chip tracked", text: trackedTag(r.entry) })),
           h("div", { class: "sub" }, formatEtClock(r.t) + " · ", trackedWalletLink(r), " · " + r.via)),
         h("div", { class: "right" }, h("div", { class: "mono", style: { fontSize: "15px", fontWeight: "600" }, text: r.usd == null ? "—" : formatUsd(r.usd, "size") }))),
       h("div", { class: "actions" }, trackedLinks(r))));
@@ -2553,7 +2603,7 @@ function trackedBody() {
   for (const r of rows) {
     tb.append(h("tr", {},
       h("td", { class: "mono", text: formatEtClock(r.t) }),
-      h("td", {}, trackedWalletLink(r), h("span", { class: "chip whale", text: "GMGN smart inflow" })),
+      h("td", {}, trackedWalletLink(r), h("span", { class: "chip tracked", text: trackedTag(r.entry) })),
       h("td", {}, h("a", { href: "#", text: r.symbol || shortCa(r.mint), onclick: (e) => { e.preventDefault(); resolveAndSelect("solana", r.mint); } })),
       h("td", { class: r.side === "buy" ? "side-buy" : "side-sell", text: r.side === "buy" ? "Buy" : "Sell" }),
       h("td", { class: "num", text: r.usd == null ? "—" : formatUsd(r.usd, "size") }),
