@@ -1,6 +1,6 @@
 {
- "updatedET": "8:24 AM ET, Nov 17, 2026",
- "updatedISO": "2026-11-17T08:24:33-05:00",
+ "updatedET": "10:34 AM ET, Nov 17, 2026",
+ "updatedISO": "2026-11-17T10:34:17-05:00",
  "source": "Wallets from GMGN Smart Net Inflow rows in data/smart-money.json and its git history",
  "cap": 50,
  "mergeRule": "Key = prefix…suffix of the GMGN wallet (or walletFull). Each new snapshot adds buys/sells/tokens once per asOfISO, keeps any known walletFull, then the list is re-ranked by snapshots, buys, tokens, buy USD and capped at 50. See README.",
@@ -13,11 +13,11 @@
    "label": "GMGN smart inflow",
    "firstSeenISO": "2026-11-13T05:20:00-05:00",
    "firstSeenET": "5:20 AM ET, Nov 13, 2026",
-   "lastSeenISO": "2026-11-17T08:16:00-05:00",
-   "lastSeenET": "8:16 AM ET, Nov 17, 2026",
-   "snapshots": 12,
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 13,
    "buys": 3,
-   "sells": 23,
+   "sells": 25,
    "buyUsd": 171.37,
    "tokens": [
     "Maxcoin",
@@ -44,10 +44,12 @@
     "ANIME",
     "FLYWHEEL",
     "WORLDCRAFT",
-    "cobiecoin"
+    "cobiecoin",
+    "SIM",
+    "GEKKO"
    ],
    "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
-   "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
   },
   {
    "wallet": "4AFA…cwFE",
@@ -57,11 +59,11 @@
    "label": "GMGN smart inflow",
    "firstSeenISO": "2026-11-15T18:20:00-05:00",
    "firstSeenET": "6:20 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-17T08:16:00-05:00",
-   "lastSeenET": "8:16 AM ET, Nov 17, 2026",
-   "snapshots": 8,
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 9,
    "buys": 1,
-   "sells": 13,
+   "sells": 14,
    "buyUsd": 184.8,
    "tokens": [
     "ANTHROPIC",
@@ -73,10 +75,39 @@
     "SPCX",
     "COST",
     "Maxxmas",
-    "Rocco"
+    "Rocco",
+    "mihao"
    ],
    "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
-   "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
+  },
+  {
+   "wallet": "GZDR…m7ui",
+   "prefix": "GZDR",
+   "suffix": "m7ui",
+   "walletFull": "GZDRqVfpKLjTmDxf2Zh34WURCojSKbAoDJqxCi53m7ui",
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-16T10:13:00-05:00",
+   "firstSeenET": "10:13 AM ET, Nov 16, 2026",
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 7,
+   "buys": 5,
+   "sells": 4,
+   "buyUsd": 253.18,
+   "tokens": [
+    "狮来",
+    "backpack",
+    "pep",
+    "AI",
+    "WHISKEY",
+    "MAIN",
+    "smowl",
+    "NigelonAi",
+    "KIM"
+   ],
+   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
   },
   {
    "wallet": "BNei…3ZQv",
@@ -157,33 +188,6 @@
     "Americhan",
     "Gloriana",
     "rockstar"
-   ],
-   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
-   "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
-  },
-  {
-   "wallet": "GZDR…m7ui",
-   "prefix": "GZDR",
-   "suffix": "m7ui",
-   "walletFull": "GZDRqVfpKLjTmDxf2Zh34WURCojSKbAoDJqxCi53m7ui",
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-16T10:13:00-05:00",
-   "firstSeenET": "10:13 AM ET, Nov 16, 2026",
-   "lastSeenISO": "2026-11-17T08:16:00-05:00",
-   "lastSeenET": "8:16 AM ET, Nov 17, 2026",
-   "snapshots": 6,
-   "buys": 4,
-   "sells": 4,
-   "buyUsd": 199.08,
-   "tokens": [
-    "狮来",
-    "backpack",
-    "pep",
-    "AI",
-    "WHISKEY",
-    "MAIN",
-    "smowl",
-    "NigelonAi"
    ],
    "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
    "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
@@ -292,6 +296,32 @@
    "lastSnapshotISO": "2026-11-16T22:15:00-05:00"
   },
   {
+   "wallet": "udH4…JfJL",
+   "prefix": "udH4",
+   "suffix": "JfJL",
+   "walletFull": "udH4u5k3vWX7izz119MHDckeLE6pxdypupWtd41JfJL",
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-13T05:20:00-05:00",
+   "firstSeenET": "5:20 AM ET, Nov 13, 2026",
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 5,
+   "buys": 3,
+   "sells": 5,
+   "buyUsd": 39.14,
+   "tokens": [
+    "ADC",
+    "TTWO",
+    "SUNNY",
+    "mihao",
+    "JUP",
+    "Huang",
+    "LEEROY"
+   ],
+   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
+  },
+  {
    "wallet": "5hqZ…3w85",
    "prefix": "5hqZ",
    "suffix": "3w85",
@@ -315,6 +345,30 @@
    ],
    "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
    "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
+  },
+  {
+   "wallet": "wgmF…2mLZ",
+   "prefix": "wgmF",
+   "suffix": "2mLZ",
+   "walletFull": null,
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-15T18:20:00-05:00",
+   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 5,
+   "buys": 1,
+   "sells": 4,
+   "buyUsd": 147.2,
+   "tokens": [
+    "GOAT",
+    "CYBER",
+    "NVDA",
+    "MEW",
+    "MEOW"
+   ],
+   "resolvedBy": null,
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
   },
   {
    "wallet": "BYxx…VTTh",
@@ -418,31 +472,6 @@
    "lastSnapshotISO": "2026-11-17T08:16:00-05:00"
   },
   {
-   "wallet": "udH4…JfJL",
-   "prefix": "udH4",
-   "suffix": "JfJL",
-   "walletFull": "udH4u5k3vWX7izz119MHDckeLE6pxdypupWtd41JfJL",
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-13T05:20:00-05:00",
-   "firstSeenET": "5:20 AM ET, Nov 13, 2026",
-   "lastSeenISO": "2026-11-16T14:31:00-05:00",
-   "lastSeenET": "2:31 PM ET, Nov 16, 2026",
-   "snapshots": 4,
-   "buys": 3,
-   "sells": 4,
-   "buyUsd": 39.14,
-   "tokens": [
-    "ADC",
-    "TTWO",
-    "SUNNY",
-    "mihao",
-    "JUP",
-    "Huang"
-   ],
-   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
-   "lastSnapshotISO": "2026-11-16T14:31:00-05:00"
-  },
-  {
    "wallet": "9999…QbU4",
    "prefix": "9999",
    "suffix": "QbU4",
@@ -470,6 +499,29 @@
    "lastSnapshotISO": "2026-11-16T22:15:00-05:00"
   },
   {
+   "wallet": "7hBJ…8vRC",
+   "prefix": "7hBJ",
+   "suffix": "8vRC",
+   "walletFull": "7hBJtd155gDcmmZxC3H3Kc2F571ewYNsAwqs3BPb8vRC",
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-15T16:17:37-05:00",
+   "firstSeenET": "4:17 PM ET, Nov 15, 2026",
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 4,
+   "buys": 2,
+   "sells": 2,
+   "buyUsd": 145.44,
+   "tokens": [
+    "TTP",
+    "ANIME",
+    "Lemon",
+    "Maya"
+   ],
+   "resolvedBy": "GMGN",
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
+  },
+  {
    "wallet": "9NXN…m4rs",
    "prefix": "9NXN",
    "suffix": "m4rs",
@@ -491,29 +543,6 @@
    ],
    "resolvedBy": null,
    "lastSnapshotISO": "2026-11-16T18:19:00-05:00"
-  },
-  {
-   "wallet": "wgmF…2mLZ",
-   "prefix": "wgmF",
-   "suffix": "2mLZ",
-   "walletFull": null,
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-15T18:20:00-05:00",
-   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-16T22:15:00-05:00",
-   "lastSeenET": "10:15 PM ET, Nov 16, 2026",
-   "snapshots": 4,
-   "buys": 0,
-   "sells": 4,
-   "buyUsd": 0.0,
-   "tokens": [
-    "GOAT",
-    "CYBER",
-    "NVDA",
-    "MEW"
-   ],
-   "resolvedBy": null,
-   "lastSnapshotISO": "2026-11-16T22:15:00-05:00"
   },
   {
    "wallet": "GeoV…WKRo",
@@ -561,6 +590,28 @@
    ],
    "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
    "lastSnapshotISO": "2026-11-16T14:31:00-05:00"
+  },
+  {
+   "wallet": "7gdo…By5U",
+   "prefix": "7gdo",
+   "suffix": "By5U",
+   "walletFull": null,
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-15T18:20:00-05:00",
+   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
+   "lastSeenISO": "2026-11-17T10:22:00-05:00",
+   "lastSeenET": "10:22 AM ET, Nov 17, 2026",
+   "snapshots": 3,
+   "buys": 3,
+   "sells": 0,
+   "buyUsd": 585.1,
+   "tokens": [
+    "telecat",
+    "MooManao",
+    "BRAVO"
+   ],
+   "resolvedBy": null,
+   "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
   },
   {
    "wallet": "5gnt…ymih",
@@ -789,28 +840,6 @@
    "lastSnapshotISO": "2026-11-16T18:19:00-05:00"
   },
   {
-   "wallet": "7hBJ…8vRC",
-   "prefix": "7hBJ",
-   "suffix": "8vRC",
-   "walletFull": null,
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-15T16:17:37-05:00",
-   "firstSeenET": "4:17 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-16T12:19:00-05:00",
-   "lastSeenET": "12:19 PM ET, Nov 16, 2026",
-   "snapshots": 3,
-   "buys": 1,
-   "sells": 2,
-   "buyUsd": 112.7,
-   "tokens": [
-    "TTP",
-    "ANIME",
-    "Lemon"
-   ],
-   "resolvedBy": null,
-   "lastSnapshotISO": "2026-11-16T12:19:00-05:00"
-  },
-  {
    "wallet": "9PS6…crLm",
    "prefix": "9PS6",
    "suffix": "crLm",
@@ -965,27 +994,6 @@
    ],
    "resolvedBy": null,
    "lastSnapshotISO": "2026-11-16T08:22:00-05:00"
-  },
-  {
-   "wallet": "7gdo…By5U",
-   "prefix": "7gdo",
-   "suffix": "By5U",
-   "walletFull": null,
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-15T18:20:00-05:00",
-   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-16T12:19:00-05:00",
-   "lastSeenET": "12:19 PM ET, Nov 16, 2026",
-   "snapshots": 2,
-   "buys": 2,
-   "sells": 0,
-   "buyUsd": 366.7,
-   "tokens": [
-    "telecat",
-    "MooManao"
-   ],
-   "resolvedBy": null,
-   "lastSnapshotISO": "2026-11-16T12:19:00-05:00"
   },
   {
    "wallet": "8oo5…1WNT",
