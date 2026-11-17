@@ -1,5 +1,5 @@
 /* Cache version: bump this whenever the app shell (html/css/js/icons) changes. */
-const CACHE_VERSION = "smt-shell-v4";
+const CACHE_VERSION = "smt-shell-v5";
 
 const SHELL = [
   "./",

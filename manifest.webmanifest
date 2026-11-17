@@ -1,6 +1,6 @@
 {
-  "name": "TradeHound Terminal",
-  "short_name": "TradeHound",
+  "name": "WickHound Terminal",
+  "short_name": "WickHound",
   "description": "Live Solana prices, charts and trades, plus a GMGN smart-money snapshot.",
   "start_url": "./",
   "scope": "./",
