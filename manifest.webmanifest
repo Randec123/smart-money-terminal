@@ -1,6 +1,6 @@
 {
-  "name": "Tradehound Terminal",
-  "short_name": "Tradehound",
+  "name": "TradeHound Terminal",
+  "short_name": "TradeHound",
   "description": "Live Solana prices, charts and trades, plus a GMGN smart-money snapshot.",
   "start_url": "./",
   "scope": "./",

@@ -1,4 +1,4 @@
-/* Tradehound Terminal — live public-market data + GMGN snapshot tabs. */
+/* TradeHound Terminal — live public-market data + GMGN snapshot tabs. */
 "use strict";
 
 const GT = "https://api.geckoterminal.com/api/v2";

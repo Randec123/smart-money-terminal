@@ -1,6 +1,6 @@
-# Tradehound Terminal
+# TradeHound Terminal
 
-A public, no-sign-in website that looks like the desktop and mobile Tradehound Terminal Pages.
+A public, no-sign-in website that looks like the desktop and mobile TradeHound Terminal Pages.
 
 - **Live, in the browser:** major-coin prices, Solana trending and new pools, boosted tokens, search, the selected token’s candlestick chart, and its public trades. These fetch straight from CoinGecko, GeckoTerminal, and DexScreener. No API keys.
 - **Snapshot, not live:** smart-wallet / KOL counts, GMGN Smart Net Inflow, early accumulation, and insider / top-10 / sniper percentages. These are read from [`data/smart-money.json`](data/smart-money.json) and are always labeled with an **as of** timestamp so they are never mistaken for a live feed.
