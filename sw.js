@@ -1,5 +1,5 @@
 /* Cache version: bump this whenever the app shell (html/css/js/icons) changes. */
-const CACHE_VERSION = "smt-shell-v5";
+const CACHE_VERSION = "smt-shell-v6";
 
 const SHELL = [
   "./",
@@ -7,6 +7,8 @@ const SHELL = [
   "./styles.css",
   "./app.js",
   "./favicon.svg",
+  "./favicon.png",
+  "./icons/logo-128.png",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
