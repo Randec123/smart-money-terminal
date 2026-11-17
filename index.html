@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#07090c" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SM Terminal" />
   <meta name="description" content="Smart Money Terminal — live Solana prices, charts and trades, plus a GMGN smart-money snapshot." />
   <title>Smart Money Terminal</title>
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -27,6 +33,7 @@
       </div>
       <nav id="side-nav" class="side-nav"></nav>
       <div class="sidebar-foot">
+        <button type="button" class="install-btn" data-install-app hidden>Install app</button>
         <p>Prices, charts and trades stream from public APIs in your browser. Smart-money tabs are a snapshot, not a live feed.</p>
       </div>
     </aside>
@@ -37,8 +44,16 @@
           <div class="brand-mark" aria-hidden="true"></div>
           <div class="brand-title">Smart Money</div>
         </div>
-        <div id="mobile-live" class="live-pill" hidden><span class="pulse"></span> LIVE</div>
+        <div class="mobile-header-actions">
+          <button type="button" class="install-btn" data-install-app hidden>Install app</button>
+          <div id="mobile-live" class="live-pill" hidden><span class="pulse"></span> LIVE</div>
+        </div>
       </header>
+
+      <div id="ios-install-hint" class="ios-install-hint" hidden>
+        <p>Tap Share, then Add to Home Screen</p>
+        <button type="button" class="ios-hint-dismiss" data-ios-hint-dismiss aria-label="Dismiss">×</button>
+      </div>
 
       <div id="ticker" class="ticker" role="region" aria-label="Major coin prices"></div>
       <div id="status-bar" class="status-bar"></div>
@@ -48,5 +63,53 @@
     <nav id="mobile-tabs" class="mobile-tabs" aria-label="Mobile tabs"></nav>
   </div>
   <div id="toast" class="toast" hidden role="status"></div>
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js");
+    }
+    (function () {
+      const standalone = window.matchMedia("(display-mode: standalone)").matches
+        || window.navigator.standalone === true;
+      const installBtns = document.querySelectorAll("[data-install-app]");
+      const iosHint = document.getElementById("ios-install-hint");
+      if (standalone) return;
+
+      const ua = navigator.userAgent || "";
+      const iOS = /iPhone|iPad|iPod/.test(ua)
+        || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const iosSafari = iOS && /WebKit/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+      const hintKey = "smt-ios-hint-dismissed";
+      if (iosSafari && iosHint && !localStorage.getItem(hintKey)) {
+        iosHint.hidden = false;
+        iosHint.querySelectorAll("[data-ios-hint-dismiss]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            iosHint.hidden = true;
+            localStorage.setItem(hintKey, "1");
+          });
+        });
+      }
+
+      let deferredPrompt = null;
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        installBtns.forEach((btn) => { btn.hidden = false; });
+      });
+      installBtns.forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice.catch(() => {});
+          deferredPrompt = null;
+          installBtns.forEach((el) => { el.hidden = true; });
+        });
+      });
+      window.addEventListener("appinstalled", () => {
+        deferredPrompt = null;
+        installBtns.forEach((el) => { el.hidden = true; });
+        if (iosHint) iosHint.hidden = true;
+      });
+    })();
+  </script>
 </body>
 </html>

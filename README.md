@@ -16,6 +16,17 @@ Intended URLs, once GitHub Pages is enabled on this repo (account `Randec123`):
 
 If Pages is served from a project site, keep the asset paths relative (they already are).
 
+## Install as an app
+
+The site is a Progressive Web App. On a phone, open the live site in the browser, then:
+
+- **Android (Chrome):** tap **Install app**, or the browser menu’s *Install app* / *Add to Home screen*.
+- **iPhone / iPad (Safari):** tap **Share**, then **Add to Home Screen**. (Safari does not show the Install app button.)
+- **Desktop (Chrome or Edge):** use the install icon in the address bar, or the **Install app** button in the sidebar.
+
+Once installed it opens in its own window, without the browser chrome. Alerts still only fire while the app or a browser tab is open.
+
+
 ## What is live, and how often it refreshes
 
 Every live panel shows a **LIVE** pill and a last-updated time in Eastern Time. Polling pauses when the tab is hidden, and every fetch backs off on HTTP 429 (honors `Retry-After` when present, otherwise exponential backoff up to 2 minutes).
