@@ -38,7 +38,7 @@ const NAV = [
   { id: "watchlist", label: "Watchlist", kind: "live" },
   { id: "kol", label: "KOL Signals", kind: "snap" },
   { id: "nansen", label: "Nansen Scan", kind: "snap" },
-  { id: "fib", label: "Fib Levels", kind: "live" },
+  { id: "fib", label: "Fib Pullback", kind: "live" },
   { id: "custom", label: "Custom Alerts", kind: "live" },
   { id: "whales", label: "Whale Flow", kind: "live" },
   { id: "tracked", label: "Tracked Wallets", kind: "live" },
@@ -50,6 +50,7 @@ const MOBILE_TABS = [
   { id: "accumulation", label: "Accum." },
   { id: "charts", label: "Charts" },
   { id: "watchlist", label: "Watch" },
+  { id: "fib", label: "Fib" },
   { id: "whales", label: "Whales" },
   { id: "wallets", label: "Wallets" },
 ];
@@ -495,23 +496,6 @@ function accumulationFromFlows() {
   });
 }
 function countOrDash(v) { return v == null || !Number.isFinite(v) ? "—" : String(v); }
-function fibFromCandles(rows) {
-  if (!rows || rows.length < 2) return [];
-  const high = Math.max(...rows.map((r) => r.high));
-  const low = Math.min(...rows.map((r) => r.low));
-  const range = high - low;
-  if (!(range > 0)) return [];
-  return [
-    { label: "0% (swing high)", ratio: 0 },
-    { label: "23.6%", ratio: 0.236 },
-    { label: "38.2%", ratio: 0.382 },
-    { label: "50%", ratio: 0.5 },
-    { label: "61.8%", ratio: 0.618 },
-    { label: "78.6%", ratio: 0.786 },
-    { label: "100% (swing low)", ratio: 1 },
-  ].map((m) => ({ ...m, price: high - range * m.ratio }));
-}
-
 async function loadMajors() {
   const ids = MAJORS_SPEC.map((m) => m.id).join(",");
   try {
@@ -736,7 +720,6 @@ async function loadCandles(signal) {
     state.candlesAt = new Date();
     state.candlesErr = null;
     updateChartPanel();
-    if (state.nav === "fib") renderWorkspace();
   } catch (e) {
     if (e.name === "AbortError") return;
     state.candlesErr = e.message;
@@ -896,10 +879,11 @@ function goNav(id) {
   else if (id === "alerts") state.mobileTab = "alerts";
   else if (id === "accumulation") state.mobileTab = "accumulation";
   else if (id === "watchlist") state.mobileTab = "watchlist";
-  else if (id === "fib") state.mobileTab = "charts";
+  else if (id === "fib") state.mobileTab = "fib";
   else if (id === "whales") state.mobileTab = "whales";
   else if (id === "tracked") state.mobileTab = "wallets";
   renderAll();
+  if (id === "fib") maybeKickFib();
 }
 
 function renderNav() {
@@ -928,9 +912,11 @@ function renderMobileTabs() {
         else if (item.id === "accumulation") state.nav = "accumulation";
         else if (item.id === "charts") state.nav = "terminal";
         else if (item.id === "watchlist") state.nav = "watchlist";
+        else if (item.id === "fib") state.nav = "fib";
         else if (item.id === "whales") state.nav = "whales";
         else if (item.id === "wallets") state.nav = "tracked";
         renderAll();
+        if (item.id === "fib") maybeKickFib();
       },
     }, item.label));
   }
@@ -1683,35 +1669,647 @@ function renderNansen() {
   return wrap;
 }
 
-function renderFib() {
-  const wrap = h("div", { class: "stack" });
-  const tok = state.selected;
-  wrap.append(h("h1", { class: "page-head", text: "Fib Levels" + (tok ? " · " + tok.symbol : "") }));
-  wrap.append(h("p", { class: "page-lead", text: "Retracements from the swing high to swing low of the currently loaded live candles (" + (TF[state.tf]?.label || state.tf) + "). Levels update when the chart’s candle set updates. This is a geometric reading of public OHLCV, not a signal from smart wallets." }));
+/* ---------- Live Fib Pullback scanner (public OHLCV, approximate levels) ---------- */
+const LS_FIB = "smt-fib-v1";
+const LS_FIB_FIRED = "smt-fib-fired-v1";
+const FIB_LIST_EVERY = 150000;     // candidate list every 2.5 min while the tab is open
+const FIB_LIST_IDLE = 360000;      // every 6 min when the site is open but this tab is not
+const FIB_OHLCV_EVERY = 8000;      // one token every 8s while the tab is open
+const FIB_OHLCV_IDLE = 30000;      // every 30s otherwise, so alerts can still fire lightly
+const FIB_OHLCV_WHALE = 15000;     // slower if Whale Flow is the focused tab
+const FIB_OHLCV_TTL = 4 * 60000;   // reuse candles for 4 minutes
+const FIB_MAX = 24;
+const FIB_MIN_PUMP = 2.9;          // ~3x swing from pre-ATH low to ATH
+const FIB_APPROACH = 0.05;         // within 5% above a level
+const FIB_PRESETS = {
+  pump: { id: "pump", label: "Pump.fun ($40K+, 0.618/0.786)", minMc: 40000, minLiq: 10000, minVol: 1000, ratios: [0.618, 0.786], pumpOnly: true },
+  runners: { id: "runners", label: "Runners ($1M+, 0.618/0.786/0.886)", minMc: 1_000_000, minLiq: 50000, minVol: 1000, ratios: [0.618, 0.786, 0.886], pumpOnly: false },
+};
+const savedFib = loadJson(LS_FIB, {});
+const fib = {
+  preset: savedFib.preset === "runners" ? "runners" : "pump",
+  scope: savedFib.scope === "all" ? "all" : "solana",
+  candidates: [], candAt: null, candErr: null,
+  cache: {},
+  rows: [],
+  cursor: 0,
+  at: null, err: null, lastToken: null, lastTf: null,
+  fired: loadJson(LS_FIB_FIRED, {}),
+  listBusy: false, tickBusy: false,
+};
+function saveFib() { saveJson(LS_FIB, { preset: fib.preset, scope: fib.scope }); }
+function saveFibFired() {
+  const cutoff = Date.now() - 90 * 24 * 3600000;
+  const keys = Object.keys(fib.fired);
+  if (keys.length > 500) {
+    for (const k of keys) if (fib.fired[k] < cutoff) delete fib.fired[k];
+  }
+  saveJson(LS_FIB_FIRED, fib.fired);
+}
+function fibPreset() { return FIB_PRESETS[fib.preset] || FIB_PRESETS.pump; }
+function onFibView() {
+  return isMobile() ? state.mobileTab === "fib" : state.nav === "fib";
+}
+function fibScopeLocked() { return fib.preset === "pump"; }
+function effectiveFibScope() { return fibScopeLocked() ? "solana" : fib.scope; }
+function isPumpToken(tok) {
+  const addr = String(tok.address || "");
+  const dex = String(tok.dex || "").toLowerCase();
+  return /pump$/i.test(addr) || dex === "pumpswap" || dex === "pump-fun" || dex === "pumpfun";
+}
+function tokenCap(tok) {
+  const mc = num(tok.mc);
+  if (mc != null && mc > 0) return mc;
+  const fdv = num(tok.fdv);
+  return fdv != null && fdv > 0 ? fdv : null;
+}
+function fibOhlcvKey(tok, tf) {
+  const net = GT_NET[tok.network] || tok.network || "solana";
+  return net + ":" + tok.pool + ":" + (tf?.label || "1h");
+}
+function fibTimeframe(tok) {
+  const ageMs = tok.createdAt ? Date.now() - new Date(tok.createdAt).getTime() : null;
+  if (Number.isFinite(ageMs) && ageMs < 48 * 3600000) return { path: "minute", aggregate: 15, label: "15m", limit: 1000 };
+  return { path: "hour", aggregate: 1, label: "1h", limit: 1000 };
+}
+function parseOhlcv(data) {
+  const raw = data?.data?.attributes?.ohlcv_list || [];
+  const rows = raw
+    .map((r) => ({ time: Number(r[0]), open: Number(r[1]), high: Number(r[2]), low: Number(r[3]), close: Number(r[4]), volume: Number(r[5]) }))
+    .filter((r) => Number.isFinite(r.time) && Number.isFinite(r.high) && Number.isFinite(r.low) && Number.isFinite(r.close))
+    .sort((a, b) => a.time - b.time);
+  const dedup = [];
+  for (const r of rows) {
+    if (dedup.length && dedup[dedup.length - 1].time === r.time) dedup[dedup.length - 1] = r;
+    else dedup.push(r);
+  }
+  return dedup;
+}
+function computeSwing(rows) {
+  if (!rows || rows.length < 2) return null;
+  let athI = 0;
+  for (let i = 1; i < rows.length; i++) if (rows[i].high > rows[athI].high) athI = i;
+  const ath = rows[athI].high;
+  let low = rows[0].low;
+  for (let i = 1; i <= athI; i++) if (rows[i].low < low) low = rows[i].low;
+  if (!(ath > low) || !(low > 0)) return null;
+  return { ath, low, athTime: rows[athI].time, multiple: ath / low };
+}
+function fibEvaluate(tok, rows, ratios) {
+  const sw = computeSwing(rows);
+  if (!sw || sw.multiple < FIB_MIN_PUMP) return { skip: "swing", multiple: sw ? sw.multiple : null };
+  const cap = tokenCap(tok);
+  const px = num(tok.price);
+  const supply = (px > 0 && cap > 0) ? cap / px : null;
+  const close = rows[rows.length - 1].close;
+  const toMc = (p) => (supply ? p * supply : p);
+  const currentMc = supply ? toMc(close) : cap;
+  if (currentMc == null || !(currentMc > 0)) return { skip: "mc" };
+  const athMc = toMc(sw.ath);
+  const lowMc = toMc(sw.low);
+  const levels = ratios.map((r) => ({
+    ratio: r,
+    label: String(r),
+    mc: athMc - r * (athMc - lowMc),
+  }));
+  const deepest = levels[levels.length - 1];
+  let status = "above";
+  let statusLabel = "Above " + levels[0].label;
+  let next = levels[0];
+  let atLevel = null;
+  if (currentMc <= deepest.mc) {
+    status = "invalidated";
+    statusLabel = "Invalidated (below " + deepest.label + ")";
+    next = null;
+  } else {
+    for (let i = 0; i < levels.length; i++) {
+      const lv = levels[i];
+      const deeper = levels[i + 1];
+      if (currentMc > lv.mc) {
+        if (currentMc <= lv.mc * (1 + FIB_APPROACH)) {
+          status = "approaching";
+          statusLabel = "Approaching " + lv.label;
+          next = lv;
+        } else {
+          status = "above";
+          statusLabel = "Above " + lv.label;
+          next = lv;
+        }
+        break;
+      }
+      if (!deeper || currentMc > deeper.mc) {
+        status = "at";
+        statusLabel = "At " + lv.label;
+        atLevel = lv;
+        next = deeper || null;
+        break;
+      }
+    }
+  }
+  let near = levels[0];
+  let nearDist = Infinity;
+  for (const lv of levels) {
+    const d = Math.abs(currentMc - lv.mc) / lv.mc;
+    if (d < nearDist) { nearDist = d; near = lv; }
+  }
+  const nextDistPct = next && next.mc > 0 ? ((currentMc - next.mc) / next.mc) * 100 : null;
+  const risk = riskCache[riskKey(tok)];
+  const riskData = risk && !risk.loading ? risk.data : null;
+  return {
+    skip: null,
+    id: (tok.network || "solana") + ":" + tok.address,
+    tok, rows,
+    currentMc, athMc, lowMc, multiple: sw.multiple, athTime: sw.athTime,
+    levels, status, statusLabel, next, atLevel, nextDistPct,
+    near, nearDistPct: nearDist * 100,
+    supply, close,
+    holders: tok.holders ?? riskData?.holders ?? null,
+    risk,
+    danger: !!(riskData && riskData.danger),
+  };
+}
+function fibPassesLiveFilters(tok, preset, scope) {
+  if (!tok || !tok.address || !tok.pool) return false;
+  if (scope === "solana" && (tok.network || "solana") !== "solana") return false;
+  if (preset.pumpOnly && !isPumpToken(tok)) return false;
+  const cap = tokenCap(tok) || 0;
+  const liq = num(tok.liquidity) || 0;
+  const vol = num(tok.vol?.h24) || 0;
+  if (cap < preset.minMc) return false;
+  if (liq < preset.minLiq) return false;
+  if (vol < preset.minVol) return false;
+  return true;
+}
+function mergeFibCandidates(list) {
+  const best = new Map();
+  for (const tok of list) {
+    if (!tok || !tok.address) continue;
+    const id = (tok.network || "solana") + ":" + tok.address;
+    const cur = best.get(id);
+    if (!cur || (num(tok.liquidity) || 0) > (num(cur.liquidity) || 0)) best.set(id, tok);
+  }
+  return [...best.values()];
+}
+function rankFibCandidates(list) {
+  return list.slice().sort((a, b) => {
+    const retrace = (t) => (num(t.chg?.h1) || 0) + (num(t.chg?.h6) || 0);
+    const ra = retrace(a), rb = retrace(b);
+    if ((ra < 0) !== (rb < 0)) return ra < 0 ? -1 : 1;
+    return (num(b.vol?.h24) || 0) - (num(a.vol?.h24) || 0);
+  }).slice(0, FIB_MAX);
+}
+async function fibFetchPumpswap() {
+  const data = await fetchJson(GT + "/networks/solana/dexes/pumpswap/pools?include=base_token,quote_token,dex&sort=h24_volume_usd_desc");
+  return (data.data || []).map((p) => poolToToken(p, data.included)).filter((t) => t.address && t.pool);
+}
+async function fibFetchAllTrending() {
+  if (whale.globalPools.length && whale.globalAt && Date.now() - whale.globalAt.getTime() < 180000) return whale.globalPools;
+  const data = await fetchJson(GT + "/networks/trending_pools?include=base_token,quote_token,dex");
+  return (data.data || []).map((p) => poolToToken(p, data.included)).filter((t) => t.address && t.pool);
+}
+async function fibFetchBoostTokens(scope) {
+  let list = state.boosts;
+  const fresh = state.boostsAt && Date.now() - state.boostsAt.getTime() < 180000;
+  if (!fresh || !list.length) {
+    const data = await fetchJson(DS + "/token-boosts/latest/v1");
+    list = Array.isArray(data) ? data : [];
+  }
+  const wanted = list.filter((b) => b.tokenAddress && (scope === "all" || b.chainId === "solana")).slice(0, 20);
+  if (!wanted.length) return [];
+  const byChain = {};
+  for (const b of wanted) {
+    const c = b.chainId || "solana";
+    (byChain[c] || (byChain[c] = [])).push(b.tokenAddress);
+  }
+  const out = [];
+  for (const [chain, addrs] of Object.entries(byChain)) {
+    const unique = [...new Set(addrs)];
+    const pairs = await fetchJson(DS + "/tokens/v1/" + chain + "/" + unique.join(","));
+    const arr = Array.isArray(pairs) ? pairs : [];
+    const grouped = {};
+    for (const p of arr) {
+      const a = p.baseToken?.address;
+      if (!a) continue;
+      (grouped[a] || (grouped[a] = [])).push(p);
+    }
+    for (const ps of Object.values(grouped)) {
+      const tok = dsPairToToken(pickBestPair(ps));
+      if (tok) out.push(tok);
+    }
+  }
+  return out;
+}
+async function loadFibCandidates({ force } = {}) {
+  if (fib.listBusy) return;
+  if (!force && fib.candAt && Date.now() - fib.candAt < 90000 && fib.candidates.length) return;
+  fib.listBusy = true;
+  const preset = fibPreset();
+  const scope = effectiveFibScope();
+  const gathered = [];
+  const errors = [];
+  const add = (list) => { for (const t of list || []) gathered.push(t); };
+  add(state.trending);
+  add(state.newPools);
+  if (scope === "all") add(whale.globalPools);
+  const jobs = [];
+  if (preset.pumpOnly && !gtBlocked()) jobs.push(["pumpswap", fibFetchPumpswap]);
+  if (scope === "all" && !gtBlocked()) jobs.push(["trending-all", fibFetchAllTrending]);
+  jobs.push(["boosts", () => fibFetchBoostTokens(scope)]);
+  const results = await Promise.allSettled(jobs.map(([, fn]) => fn()));
+  results.forEach((res, i) => {
+    if (res.status === "fulfilled") add(res.value);
+    else errors.push(jobs[i][0] + ": " + (res.reason?.message || res.reason));
+  });
+  const merged = mergeFibCandidates(gathered);
+  const passed = merged.filter((t) => fibPassesLiveFilters(t, preset, scope));
+  fib.candidates = rankFibCandidates(passed);
+  fib.candAt = new Date();
+  fib.candErr = errors.length ? errors.join("; ") : null;
+  fib.listBusy = false;
+  fibRebuildRows();
+}
+async function fetchFibOhlcv(tok) {
+  const net = GT_NET[tok.network] || tok.network || "solana";
+  const spec = fibTimeframe(tok);
+  const url = GT + "/networks/" + net + "/pools/" + tok.pool + "/ohlcv/" + spec.path +
+    "?aggregate=" + spec.aggregate + "&limit=" + spec.limit + "&currency=usd";
+  const data = await fetchJson(url);
+  return { rows: parseOhlcv(data), tf: spec };
+}
+async function fibOhlcvTick() {
+  if (fib.tickBusy) return;
+  const list = fib.candidates;
+  if (!list.length) {
+    if (!fib.candAt) await loadFibCandidates();
+    return;
+  }
+  let tok = null;
+  let tf = null;
+  for (let i = 0; i < list.length; i++) {
+    const t = list[(fib.cursor + i) % list.length];
+    const spec = fibTimeframe(t);
+    const c = fib.cache[fibOhlcvKey(t, spec)];
+    if (!c || Date.now() - c.at >= FIB_OHLCV_TTL) {
+      tok = t;
+      tf = spec;
+      fib.cursor = (fib.cursor + i + 1) % list.length;
+      break;
+    }
+  }
   if (!tok) {
-    wrap.append(h("div", { class: "empty", text: "Select a token on the Terminal first." }));
-    return wrap;
+    fibRebuildRows();
+    return;
   }
-  wrap.append(h("div", { class: "panel-head", style: { border: "1px solid var(--border)", borderRadius: "10px", marginBottom: "10px" } },
-    h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
-    h("span", { class: "panel-updated", text: stamp("LIVE", state.candlesAt, state.candlesErr) })
+  fib.tickBusy = true;
+  try {
+    const got = await fetchFibOhlcv(tok);
+    fib.cache[fibOhlcvKey(tok, got.tf)] = { at: Date.now(), rows: got.rows, tf: got.tf, err: null };
+    fib.lastToken = tok.symbol;
+    fib.lastTf = got.tf.label;
+    fib.err = null;
+    fibLoadRisk(tok);
+  } catch (e) {
+    if (e.name === "AbortError") { fib.tickBusy = false; return; }
+    if (e.code === "BACKOFF" || e.code === "429") {
+      fib.err = e.message;
+      fib.tickBusy = false;
+      if (onFibView()) refreshFibBody();
+      return;
+    }
+    fib.cache[fibOhlcvKey(tok, tf)] = { at: Date.now() - FIB_OHLCV_TTL + 60000, rows: [], tf, err: e.message };
+    fib.err = e.message;
+  }
+  fib.tickBusy = false;
+  fibRebuildRows();
+}
+function fibLoadRisk(tok) {
+  const key = riskKey(tok);
+  const existing = riskCache[key];
+  if (existing && (existing.loading || Date.now() - existing.at < RISK_TTL)) {
+    if (existing.data) return;
+  }
+  Promise.resolve(loadRisk(tok)).then(() => {
+    if (onFibView() || fib.rows.length) fibRebuildRows();
+  }).catch(() => {});
+}
+function fibRebuildRows() {
+  const preset = fibPreset();
+  const out = [];
+  let pending = 0;
+  for (const tok of fib.candidates) {
+    const spec = fibTimeframe(tok);
+    const c = fib.cache[fibOhlcvKey(tok, spec)];
+    if (!c || !c.rows || !c.rows.length) { pending += 1; continue; }
+    const row = fibEvaluate(tok, c.rows, preset.ratios);
+    if (!row || row.skip) continue;
+    if (row.danger) continue;
+    row.tf = c.tf?.label || spec.label;
+    row.ohlcvAt = c.at;
+    out.push(row);
+    fibCheckAlerts(row);
+  }
+  out.sort((a, b) => {
+    if (a.status === "invalidated" && b.status !== "invalidated") return 1;
+    if (b.status === "invalidated" && a.status !== "invalidated") return -1;
+    const order = { at: 0, approaching: 1, above: 2, invalidated: 3 };
+    const da = order[a.status] ?? 4;
+    const db = order[b.status] ?? 4;
+    if (da !== db) return da - db;
+    return (a.nearDistPct || 99) - (b.nearDistPct || 99);
+  });
+  fib.rows = out;
+  fib.pending = pending;
+  fib.at = new Date();
+  if (onFibView()) refreshFibBody();
+}
+function fibCheckAlerts(row) {
+  if (row.danger) return;
+  let wrote = false;
+  for (let i = 0; i < row.levels.length; i++) {
+    const lv = row.levels[i];
+    const key = row.id + ":" + lv.ratio;
+    if (fib.fired[key]) continue;
+    if (row.currentMc > lv.mc) continue;
+    const next = row.levels[i + 1];
+    const throughNext = next && row.currentMc <= next.mc;
+    fib.fired[key] = Date.now();
+    wrote = true;
+    if (!throughNext) {
+      notifyAlert("fib", "Fib " + lv.label, row.symbol + " reached the " + lv.label + " fib at " + formatUsd(row.currentMc, "size") + " MC (ATH " + formatUsd(row.athMc, "size") + ")");
+    }
+  }
+  if (wrote) saveFibFired();
+}
+function maybeKickFib() {
+  if (!onFibView()) return;
+  if (!fib.candAt || Date.now() - fib.candAt > 30000) loadFibCandidates({ force: !fib.candAt });
+  else if (fib.candidates.length && !fib.rows.length) fibOhlcvTick();
+}
+function startFibPollers() {
+  const listLoop = async () => {
+    if (!document.hidden) await loadFibCandidates();
+    setTimeout(listLoop, onFibView() ? FIB_LIST_EVERY : FIB_LIST_IDLE);
+  };
+  const ohlcvLoop = async () => {
+    if (!document.hidden && !gtBlocked()) await fibOhlcvTick();
+    const delay = !onFibView() ? FIB_OHLCV_IDLE : (onWhaleView() ? FIB_OHLCV_WHALE : FIB_OHLCV_EVERY);
+    setTimeout(ohlcvLoop, delay);
+  };
+  setTimeout(listLoop, onFibView() ? 400 : 14000);
+  setTimeout(ohlcvLoop, onFibView() ? 1600 : 22000);
+}
+function setFibPreset(v) {
+  if (!FIB_PRESETS[v] || fib.preset === v) return;
+  fib.preset = v;
+  fib.cursor = 0;
+  saveFib();
+  renderWorkspace();
+  loadFibCandidates({ force: true });
+}
+function setFibScope(v) {
+  if (fibScopeLocked()) return;
+  if (v !== "all" && v !== "solana") return;
+  fib.scope = v;
+  fib.cursor = 0;
+  saveFib();
+  renderWorkspace();
+  loadFibCandidates({ force: true });
+}
+function fibStamp() {
+  const bits = [stamp("LIVE", fib.at || fib.candAt, fib.err || fib.candErr)];
+  bits.push(fib.rows.length + " on board");
+  if (fib.candidates.length) bits.push("scanning " + fib.candidates.length);
+  if (fib.pending) bits.push(fib.pending + " waiting on candles");
+  if (fib.lastToken) bits.push("last " + fib.lastToken + (fib.lastTf ? " " + fib.lastTf : ""));
+  return bits.join(" · ");
+}
+function renderFib() {
+  const wrap = h("div", { class: "stack", style: { maxWidth: "1240px" } });
+  const preset = fibPreset();
+  wrap.append(h("h1", { class: "page-head", text: "Fib Pullback" }));
+  wrap.append(h("div", { class: "callout info" },
+    h("strong", { text: "Free public data, approximate levels — not financial advice. " }),
+    "Swings are mapped from each pool’s visible candles (hourly, or 15m for coins younger than 48 hours): the ATH is the highest high, the swing low is the lowest low before that ATH, and each level is ATH − ratio × (ATH − low), converted to market cap with the current supply. Pump.fun’s own API blocks browser access (Cloudflare / no CORS), so Pump.fun coins are detected from a mint ending in “pump” or a PumpSwap / Pump.fun pool on GeckoTerminal and DexScreener. Dead or rugged tokens (low liquidity, near-zero 24h volume, or a RugCheck danger flag) and swings smaller than about 3× are skipped."
   ));
-  const levels = fibFromCandles(state.candles);
-  if (!levels.length) {
-    wrap.append(h("div", { class: "empty", text: state.candlesErr || "Not enough candle data yet. Open Terminal, wait for the chart to load, then return here." }));
-    return wrap;
+  const controls = h("div", { class: "chart-tools fib-tools", style: { padding: "0" } });
+  const presets = h("div", { class: "seg" });
+  for (const p of Object.values(FIB_PRESETS)) {
+    presets.append(h("button", { type: "button", class: fib.preset === p.id ? "active" : "", onclick: () => setFibPreset(p.id) }, p.id === "pump" ? "Pump.fun ($40K+, 0.618/0.786)" : "Runners ($1M+, 0.618/0.786/0.886)"));
   }
-  const table = h("table", { class: "data" });
-  table.append(h("thead", {}, h("tr", {}, h("th", { text: "Level" }), h("th", { class: "num", text: "Price" }))));
-  const tb = h("tbody");
-  for (const lv of levels) tb.append(h("tr", {}, h("td", { text: lv.label }), h("td", { class: "num", text: formatUsd(lv.price) })));
-  table.append(tb);
+  const scope = h("div", { class: "seg" });
+  for (const [v, l] of [["solana", "Solana"], ["all", "All chains"]]) {
+    const locked = fibScopeLocked() && v === "all";
+    scope.append(h("button", {
+      type: "button",
+      class: (effectiveFibScope() === v ? "active" : "") + (locked ? " locked" : ""),
+      disabled: locked ? "" : undefined,
+      title: locked ? "Pump.fun is Solana-only" : "",
+      onclick: () => setFibScope(v),
+    }, l));
+  }
+  controls.append(h("span", { class: "sub", text: "Preset" }), presets, scope);
+  if (fibScopeLocked()) controls.append(h("span", { class: "sub", text: "Pump.fun is Solana-only" }));
+  wrap.append(controls);
   const panel = h("div", { class: "panel" });
-  panel.append(table);
+  panel.append(
+    h("div", { class: "panel-head" },
+      h("h2", { text: preset.label }),
+      h("span", { class: "pill live" }, h("span", { class: "pulse" }), "LIVE"),
+      h("span", { class: "panel-updated", id: "fib-updated", text: fibStamp() })
+    ),
+    h("div", { class: "panel-note", text: "Sorted by closest to a fib level. Alerts fire once per token and level (saved in this browser) when price first reaches 0.618, 0.786" + (preset.ratios.includes(0.886) ? " or 0.886" : "") + ". The candidate list refreshes about every 2–3 minutes while this tab is open; candles are fetched in rotation and cached 4 minutes. Polling stays light so Whale Flow and Tracked Wallets keep their own budgets, and it pauses when this browser tab is hidden." }),
+    h("div", { class: "panel-body", id: "fib-body" }, fibBody())
+  );
   wrap.append(panel);
-  wrap.append(h("button", { class: "btn primary", type: "button", onclick: () => { state.nav = "terminal"; if (isMobile()) state.mobileTab = "charts"; renderAll(); } }, "Back to chart"));
+  wrap.append(h("p", { class: "page-lead", text: "Levels can miss an earlier ATH or launch low if it falls outside the candle window (about 41 days of hourly bars, or ~10 days of 15m bars). Market caps are approximate. This is not a Nansen or GMGN smart-money feed." }));
   return wrap;
 }
+function refreshFibBody() {
+  const body = document.getElementById("fib-body");
+  const up = document.getElementById("fib-updated");
+  if (up) up.textContent = fibStamp();
+  if (!body) return;
+  const st = body.scrollTop;
+  clear(body);
+  body.append(fibBody());
+  body.scrollTop = st;
+}
+function fibBody() {
+  const box = h("div");
+  if (!fib.candidates.length && !fib.candAt) {
+    box.append(h("div", { class: "empty", text: "Loading candidate tokens from GeckoTerminal and DexScreener…" }));
+    return box;
+  }
+  if (!fib.rows.length) {
+    const why = fib.err && !fib.candidates.length
+      ? "Error: " + fib.err
+      : (fib.candidates.length
+        ? (fib.pending ? "Found " + fib.candidates.length + " candidates. Mapping swings from candles… " + fib.pending + " still loading." : "No tokens in this preset currently have a ~3× swing and a usable candle history. The board fills in as pools are scanned.")
+        : (fib.candErr ? "Could not build a candidate list: " + fib.candErr : "No tokens currently pass the liquidity, volume and market-cap filters for this preset."));
+    box.append(h("div", { class: "empty", text: why }));
+    return box;
+  }
+  if (isMobile()) {
+    for (const r of fib.rows) box.append(fibCard(r));
+    return box;
+  }
+  const table = h("table", { class: "data fib-table" });
+  table.append(h("thead", {}, h("tr", {},
+    h("th", { text: "Token" }), h("th", { class: "num", text: "MC" }), h("th", { class: "num", text: "ATH → low" }),
+    h("th", { text: "Levels" }), h("th", { class: "num", text: "Next" }), h("th", { text: "Status" }),
+    h("th", { class: "num", text: "Liq" }), h("th", { text: "5m / 1h / 6h / 24h" }), h("th", { text: "Age" }),
+    h("th", { text: "Risk" }), h("th", { text: "Chart" }), h("th", { text: "Links" })
+  )));
+  const tb = h("tbody");
+  for (const r of fib.rows) tb.append(fibTableRow(r));
+  table.append(tb);
+  box.append(table);
+  return box;
+}
+function fibChgLine(tok) {
+  const c = tok.chg || {};
+  const bits = ["m5", "h1", "h6", "h24"].map((k) => {
+    return h("span", { class: "mono " + pctClass(c[k]), text: formatPct(c[k]) });
+  });
+  const line = h("span", { class: "fib-chgs" });
+  bits.forEach((el, i) => { if (i) line.append(" "); line.append(el); });
+  return line;
+}
+function fibLevelsCell(r) {
+  const cell = h("div", { class: "fib-levels" });
+  for (const lv of r.levels) {
+    const isNext = r.next && lv.ratio === r.next.ratio;
+    const isAt = r.atLevel && lv.ratio === r.atLevel.ratio;
+    cell.append(h("div", { class: "mono" + (isAt ? " up" : isNext ? " accent-lv" : "") },
+      lv.label + " " + formatUsd(lv.mc, "size")
+    ));
+  }
+  return cell;
+}
+function fibStatusChip(r) {
+  const cls = r.status === "at" ? "fib-at" : r.status === "approaching" ? "fib-approach" : r.status === "invalidated" ? "fib-inv" : "fib-above";
+  return h("span", { class: "chip " + cls, text: r.statusLabel });
+}
+function fibRiskBadge(r) {
+  const c = r.risk;
+  if (!c || (c.loading && !c.data)) return h("span", { class: "chip", text: "risk…" });
+  if (!c.data) return h("span", { class: "sub", text: "—" });
+  const counts = { red: 0, amber: 0, green: 0 };
+  for (const f of c.data.flags) if (counts[f.level] != null) counts[f.level] += 1;
+  const tone = counts.red ? "red" : counts.amber ? "amber" : "green";
+  const label = counts.red ? counts.red + " red" : counts.amber ? counts.amber + " amber" : counts.green + " green";
+  return h("span", { class: "rflag " + tone, text: label, title: c.data.source || "" });
+}
+function fibLinks(tok) {
+  const frag = h("span", { style: { display: "inline-flex", gap: "8px", flexWrap: "wrap" } });
+  frag.append(h("a", { href: dsUrl(tok.network, tok.address), target: "_blank", rel: "noreferrer", text: "DexScreener" }));
+  const g = gmgnUrl(tok.network || "solana", tok.address);
+  if (g) frag.append(h("a", { href: g, target: "_blank", rel: "noreferrer", text: "GMGN" }));
+  return frag;
+}
+function fibTableRow(r) {
+  const tok = r.tok;
+  const nextTxt = r.status === "invalidated"
+    ? "—"
+    : (r.next ? (r.nextDistPct != null && r.nextDistPct > 0 ? r.next.label + " in " + Math.abs(r.nextDistPct).toFixed(1) + "%" : "at " + (r.atLevel || r.next).label) : "—");
+  return h("tr", {},
+    h("td", {},
+      h("a", { href: "#", text: tok.symbol, onclick: (e) => { e.preventDefault(); openFibToken(tok); } }),
+      h("div", { class: "sub" },
+        h("span", { class: "chip", text: tok.chainLabel }),
+        isPumpToken(tok) ? h("span", { class: "chip", text: "pump.fun" }) : null,
+        " ",
+        h("button", { class: "btn sm", type: "button", title: tok.address, onclick: () => copyText(tok.address) }, shortCa(tok.address))
+      )
+    ),
+    h("td", { class: "num", text: formatUsd(r.currentMc, "size") }),
+    h("td", { class: "num" },
+      formatUsd(r.athMc, "size") + " → " + formatUsd(r.lowMc, "size"),
+      h("div", { class: "sub", text: trimNum(r.multiple) + "× · " + (r.tf || "") })
+    ),
+    h("td", {}, fibLevelsCell(r)),
+    h("td", { class: "num", text: nextTxt }),
+    h("td", {}, fibStatusChip(r)),
+    h("td", { class: "num" },
+      formatUsd(tok.liquidity, "size"),
+      h("div", { class: "sub", text: "holders " + (r.holders == null ? "—" : formatHolders(r.holders)) })
+    ),
+    h("td", {}, fibChgLine(tok)),
+    h("td", { text: formatAge(tok.createdAt) }),
+    h("td", {}, fibRiskBadge(r)),
+    h("td", {}, fibSparkline(r)),
+    h("td", {}, fibLinks(tok))
+  );
+}
+function fibCard(r) {
+  const tok = r.tok;
+  const nextTxt = r.status === "invalidated"
+    ? "Below " + r.levels[r.levels.length - 1].label
+    : (r.next && r.nextDistPct != null && r.nextDistPct > 0 ? r.next.label + " in " + Math.abs(r.nextDistPct).toFixed(1) + "%" : r.statusLabel);
+  return h("div", { class: "token-card fib-card", style: { marginBottom: "8px", cursor: "default" } },
+    h("div", { class: "top" },
+      h("div", {},
+        h("div", { class: "name-row" },
+          h("span", { class: "sym", text: tok.symbol }),
+          h("span", { class: "chip", text: tok.chainLabel }),
+          isPumpToken(tok) ? h("span", { class: "chip", text: "pump.fun" }) : null,
+          fibStatusChip(r)
+        ),
+        h("div", { class: "sub" },
+          h("button", { class: "btn sm", type: "button", onclick: () => copyText(tok.address) }, shortCa(tok.address)),
+          " · MC " + formatUsd(r.currentMc, "size") + " · ATH " + formatUsd(r.athMc, "size") + " → low " + formatUsd(r.lowMc, "size") + " (" + trimNum(r.multiple) + "×)"
+        )
+      ),
+      h("div", { class: "right" },
+        h("div", { class: "mono", style: { fontSize: "13px", fontWeight: "600" }, text: nextTxt }),
+        fibSparkline(r)
+      )
+    ),
+    h("div", { class: "stat-row" },
+      fibLevelsCell(r),
+      statChip("Liq", formatUsd(tok.liquidity, "size")),
+      statChip("Holders", r.holders == null ? "—" : formatHolders(r.holders)),
+      statChip("Age", formatAge(tok.createdAt)),
+      fibRiskBadge(r)
+    ),
+    h("div", { class: "sub", style: { margin: "4px 0" } }, "5m / 1h / 6h / 24h ", fibChgLine(tok)),
+    h("div", { class: "actions" },
+      h("button", { class: "btn sm primary", type: "button", onclick: () => openFibToken(tok) }, "Live chart"),
+      fibLinks(tok)
+    )
+  );
+}
+function fibSparkline(r) {
+  const closes = (r.rows || []).map((c) => r.supply ? c.close * r.supply : c.close).filter((v) => Number.isFinite(v) && v > 0);
+  if (closes.length < 2) return h("span", { class: "fib-spark-wrap", text: "—" });
+  const w = 120, hgt = 36, pad = 2;
+  const step = Math.max(1, Math.ceil(closes.length / 48));
+  const pts = closes.filter((_, i) => i % step === 0 || i === closes.length - 1);
+  const levelVals = r.levels.map((lv) => lv.mc).filter((v) => Number.isFinite(v));
+  const min = Math.min(...pts, ...levelVals);
+  const max = Math.max(...pts, ...levelVals);
+  const span = max - min || 1;
+  const xAt = (i) => pad + (i / (pts.length - 1)) * (w - pad * 2);
+  const yAt = (v) => pad + (1 - (v - min) / span) * (hgt - pad * 2);
+  let d = "";
+  pts.forEach((v, i) => { d += (i ? " L " : "M ") + xAt(i).toFixed(1) + " " + yAt(v).toFixed(1); });
+  const colors = { 0.618: "#4da3ff", 0.786: "#f5a623", 0.886: "#f43f5e" };
+  const lines = r.levels.map((lv) => {
+    const y = yAt(lv.mc).toFixed(1);
+    return '<line x1="' + pad + '" x2="' + (w - pad) + '" y1="' + y + '" y2="' + y + '" stroke="' + (colors[lv.ratio] || "#8b97a8") + '" stroke-width="1" stroke-dasharray="2 2" />';
+  }).join("");
+  const wrap = h("span", { class: "fib-spark-wrap", title: "Close vs fib levels (" + (r.tf || "") + ")" });
+  wrap.innerHTML = '<svg class="fib-spark" viewBox="0 0 ' + w + " " + hgt + '" width="' + w + '" height="' + hgt + '" aria-hidden="true">' + lines + '<path d="' + d + '" fill="none" stroke="#e8eef5" stroke-width="1.25" /></svg>';
+  return wrap;
+}
+function openFibToken(tok) {
+  const found = [...state.trending, ...state.newPools, ...whale.globalPools, ...fib.candidates].find((t) => t.address === tok.address && (t.network || "solana") === (tok.network || "solana"));
+  if (found) selectToken(found); else resolveAndSelect(tok.network || "solana", tok.address);
+  state.nav = "terminal";
+  if (isMobile()) state.mobileTab = "charts";
+  renderAll();
+}
+
 
 function renderCustom() {
   const wrap = h("div", { class: "stack" });
@@ -2069,7 +2667,7 @@ function chartVisible() {
 const LS_NOTIFY = "smt-notify-v1";
 const PAGE_START = Date.now();
 const notifyCfg = Object.assign(
-  { mute: false, sound: false, browser: false, whale: true, tracked: true, price: true },
+  { mute: false, sound: false, browser: false, whale: true, tracked: true, price: true, fib: true },
   loadJson(LS_NOTIFY, {})
 );
 const notifyLog = { lastByKind: {}, recent: [], suppressed: 0 };
@@ -2084,7 +2682,7 @@ function beep(kind) {
     const o = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     o.type = "sine";
-    o.frequency.value = kind === "tracked" ? 880 : kind === "price" ? 660 : 520;
+    o.frequency.value = kind === "tracked" ? 880 : kind === "price" ? 660 : kind === "fib" ? 740 : 520;
     g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.35);
@@ -2136,7 +2734,8 @@ function renderNotifyPanel() {
     tog("browser", "Browser notifications" + (typeof Notification !== "undefined" ? " (" + Notification.permission + ")" : " (unsupported)"), setBrowserNotify),
     tog("whale", "Whale-flow buys at or above your Whale Flow minimum"),
     tog("tracked", "Top-15 profitable / tracked wallet buys"),
-    tog("price", "Watchlist / custom price alerts")
+    tog("price", "Watchlist / custom price alerts"),
+    tog("fib", "Fib pullback: first time price reaches a 0.618 / 0.786 / 0.886 level")
   );
   panel.append(body, h("div", { class: "panel-note", text: "Saved in this browser. Throttled to one alert per type every 20 seconds and 8 per 5 minutes; extra alerts are counted, not lost from the feeds. Alerts only run while this site is open in a tab." }));
   return panel;
@@ -2179,7 +2778,11 @@ async function loadRisk(tok) {
   const el = document.getElementById("risk-card");
   if (el && state.selected && riskKey(state.selected) === key) { clear(el); el.append(riskCardBody(state.selected)); }
 }
-function flag(level, label, value, note) { return { level, label, value, note }; }
+function flag(level, label, value, note, extra) {
+  const o = { level, label, value, note };
+  if (extra) Object.assign(o, extra);
+  return o;
+}
 function pctText(v) { return v == null || !Number.isFinite(v) ? "—" : trimNum(v) + "%"; }
 function parseRugcheck(d) {
   const flags = [];
@@ -2217,13 +2820,14 @@ function parseRugcheck(d) {
   if (gi != null) flags.push(flag(gi > 10 ? "red" : gi > 0 ? "amber" : "green", "Insider network wallets", String(gi)));
   const fee = num(d.transferFee?.pct);
   if (fee != null) flags.push(flag(fee > 0 ? "amber" : "green", "Transfer fee", pctText(fee)));
-  if (d.rugged === true) flags.unshift(flag("red", "RugCheck", "Marked rugged"));
+  if (d.rugged === true) flags.unshift(flag("red", "RugCheck", "Marked rugged", "", { danger: true }));
   for (const r of Array.isArray(d.risks) ? d.risks : []) {
-    flags.push(flag(r.level === "danger" ? "red" : r.level === "warn" ? "amber" : "unknown", r.name || "Risk", r.value || (r.level || ""), r.description || ""));
+    flags.push(flag(r.level === "danger" ? "red" : r.level === "warn" ? "amber" : "unknown", r.name || "Risk", r.value || (r.level || ""), r.description || "", { danger: r.level === "danger" }));
   }
   return {
     source: "RugCheck", url: "https://rugcheck.xyz/tokens/" + d.mint, flags,
     holders: num(d.totalHolders), score: num(d.score_normalised),
+    danger: flags.some((f) => f.danger),
   };
 }
 function parseGoplus(r) {
@@ -2255,7 +2859,7 @@ function parseGoplus(r) {
     const locked = lps.filter((x) => String(x.is_locked) === "1").reduce((s, x) => s + (num(x.percent) || 0) * 100, 0);
     flags.push(flag(locked >= 90 ? "green" : locked >= 50 ? "amber" : "red", "LP locked", pctText(Math.min(locked, 100))));
   } else flags.push(flag("unknown", "LP locked", "—"));
-  return { source: "GoPlus", url: "https://gopluslabs.io/token-security/", flags, holders: num(r.holder_count), score: null };
+  return { source: "GoPlus", url: "https://gopluslabs.io/token-security/", flags, holders: num(r.holder_count), score: null, danger: flags.some((f) => f.label === "Honeypot" && f.level === "red") };
 }
 function renderRiskPanel(tok) {
   const panel = h("div", { class: "panel risk-panel" });
@@ -2641,7 +3245,7 @@ function startPollers() {
   every(() => { if (state.listTab === "boosted") loadBoosts(); }, INTERVAL.boosts);
   every(loadSmartMoney, INTERVAL.smartMoney);
   every(loadWatchlist, INTERVAL.watchlist);
-  every(() => { if (chartVisible() || state.nav === "fib") loadCandles(tokenAbort?.signal); }, INTERVAL.candles);
+  every(() => { if (chartVisible()) loadCandles(tokenAbort?.signal); }, INTERVAL.candles);
   every(() => { if (chartVisible()) loadTrades(tokenAbort?.signal); }, INTERVAL.trades);
 }
 
@@ -2659,6 +3263,7 @@ function init() {
   startPollers();
   startWhalePollers();
   startTrackedPollers();
+  startFibPollers();
   mq.addEventListener("change", () => renderAll());
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {

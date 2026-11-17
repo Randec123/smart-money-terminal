@@ -369,7 +369,7 @@ table.data .side-sell { color: var(--red); font-weight: 600; }
   #chart-el, .chart-empty { min-height: 240px; }
   .mobile-tabs {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(8, minmax(0, 1fr));
     position: fixed; left: 0; right: 0; bottom: 0;
     z-index: 20;
     background: var(--bg-elevated);
@@ -380,7 +380,7 @@ table.data .side-sell { color: var(--red); font-weight: 600; }
     min-height: var(--mobile-tab-h);
     background: transparent; color: var(--text-dim);
     border: none; border-top: 2px solid transparent;
-    font-size: 11px; font-weight: 500; line-height: 14px; padding: 8px 2px;
+    font-size: 10px; font-weight: 500; line-height: 13px; padding: 8px 1px;
   }
   .mobile-tabs button.active {
     color: var(--text); font-weight: 600;
@@ -455,4 +455,26 @@ button.pill { font-family: inherit; }
 .ios-hint-dismiss:hover { background: var(--bg-hover); color: var(--text); }
 @media (display-mode: standalone) {
   .install-btn, .ios-install-hint { display: none !important; }
+}
+
+.fib-tools { align-items: center; gap: 10px; margin-bottom: 4px; }
+.fib-tools .seg button.locked, .seg button:disabled {
+  opacity: 0.45; cursor: not-allowed;
+}
+.fib-levels { display: flex; flex-direction: column; gap: 1px; font-size: 11px; }
+.fib-levels .accent-lv { color: var(--accent); font-weight: 600; }
+.fib-chgs { white-space: nowrap; font-size: 11px; }
+.fib-chgs .mono { margin-right: 4px; }
+.chip.fib-at { color: var(--green); border-color: rgba(34, 197, 94, 0.4); background: var(--green-soft); font-weight: 600; }
+.chip.fib-approach { color: var(--amber); border-color: rgba(245, 166, 35, 0.4); background: var(--amber-soft); font-weight: 600; }
+.chip.fib-inv { color: var(--red); border-color: rgba(244, 63, 94, 0.4); background: var(--red-soft); font-weight: 600; }
+.chip.fib-above { color: var(--text-dim); }
+.fib-spark-wrap { display: inline-flex; vertical-align: middle; }
+.fib-spark { display: block; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; }
+table.fib-table td { vertical-align: top; }
+.fib-card .fib-levels { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+.fib-card .stat-row { align-items: center; }
+@media (max-width: 768px) {
+  .fib-tools { flex-wrap: wrap; }
+  .fib-tools .seg button { padding: 5px 7px; font-size: 10px; }
 }
