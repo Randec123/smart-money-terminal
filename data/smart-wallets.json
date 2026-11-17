@@ -1,6 +1,6 @@
 {
- "updatedET": "12:25 PM ET, Nov 17, 2026",
- "updatedISO": "2026-11-17T12:25:05-05:00",
+ "updatedET": "2:27 PM ET, Nov 17, 2026",
+ "updatedISO": "2026-11-17T14:27:31-05:00",
  "source": "Wallets from GMGN Smart Net Inflow rows in data/smart-money.json and its git history",
  "cap": 50,
  "mergeRule": "Key = prefix…suffix of the GMGN wallet (or walletFull). Each new snapshot adds buys/sells/tokens once per asOfISO, keeps any known walletFull, then the list is re-ranked by snapshots, buys, tokens, buy USD and capped at 50. See README.",
@@ -352,6 +352,57 @@
    "lastSnapshotISO": "2026-11-17T10:22:00-05:00"
   },
   {
+   "wallet": "FnKY…mDgS",
+   "prefix": "FnKY",
+   "suffix": "mDgS",
+   "walletFull": "FnKYTBF3BGtnFtEefaYjbyM97wTS5FMEem9QoQzbmDgS",
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-15T18:20:00-05:00",
+   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
+   "lastSeenISO": "2026-11-17T14:21:00-05:00",
+   "lastSeenET": "2:21 PM ET, Nov 17, 2026",
+   "snapshots": 5,
+   "buys": 3,
+   "sells": 3,
+   "buyUsd": 7.13,
+   "tokens": [
+    "WIGGLES",
+    "WORLDCRAFT",
+    "CRIME",
+    "lulu",
+    "SOYOUARE",
+    "BAWSAQ"
+   ],
+   "resolvedBy": "GMGN",
+   "lastSnapshotISO": "2026-11-17T14:21:00-05:00"
+  },
+  {
+   "wallet": "Gote…xhd8",
+   "prefix": "Gote",
+   "suffix": "xhd8",
+   "walletFull": "Gote3bZpr2Ks2tHYD9TewDVfxkf1jgGLjwyQLZkrxhd8",
+   "label": "GMGN smart inflow",
+   "firstSeenISO": "2026-11-15T18:20:00-05:00",
+   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
+   "lastSeenISO": "2026-11-17T14:21:00-05:00",
+   "lastSeenET": "2:21 PM ET, Nov 17, 2026",
+   "snapshots": 5,
+   "buys": 2,
+   "sells": 5,
+   "buyUsd": 48.22,
+   "tokens": [
+    "ICHIGO",
+    "Paulie",
+    "PUMP",
+    "moonbag",
+    "WANTED",
+    "CLAUDIA",
+    "MEM"
+   ],
+   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
+   "lastSnapshotISO": "2026-11-17T14:21:00-05:00"
+  },
+  {
    "wallet": "5hqZ…3w85",
    "prefix": "5hqZ",
    "suffix": "3w85",
@@ -502,54 +553,6 @@
    ],
    "resolvedBy": null,
    "lastSnapshotISO": "2026-11-16T22:15:00-05:00"
-  },
-  {
-   "wallet": "Gote…xhd8",
-   "prefix": "Gote",
-   "suffix": "xhd8",
-   "walletFull": "Gote3bZpr2Ks2tHYD9TewDVfxkf1jgGLjwyQLZkrxhd8",
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-15T18:20:00-05:00",
-   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-17T12:21:00-05:00",
-   "lastSeenET": "12:21 PM ET, Nov 17, 2026",
-   "snapshots": 4,
-   "buys": 2,
-   "sells": 3,
-   "buyUsd": 48.22,
-   "tokens": [
-    "ICHIGO",
-    "Paulie",
-    "PUMP",
-    "moonbag",
-    "WANTED"
-   ],
-   "resolvedBy": "prefix+suffix match on public GeckoTerminal trades (Nov 16, 2026)",
-   "lastSnapshotISO": "2026-11-17T12:21:00-05:00"
-  },
-  {
-   "wallet": "FnKY…mDgS",
-   "prefix": "FnKY",
-   "suffix": "mDgS",
-   "walletFull": "FnKYTBF3BGtnFtEefaYjbyM97wTS5FMEem9QoQzbmDgS",
-   "label": "GMGN smart inflow",
-   "firstSeenISO": "2026-11-15T18:20:00-05:00",
-   "firstSeenET": "6:20 PM ET, Nov 15, 2026",
-   "lastSeenISO": "2026-11-17T12:21:00-05:00",
-   "lastSeenET": "12:21 PM ET, Nov 17, 2026",
-   "snapshots": 4,
-   "buys": 2,
-   "sells": 3,
-   "buyUsd": 7.12,
-   "tokens": [
-    "WIGGLES",
-    "WORLDCRAFT",
-    "CRIME",
-    "lulu",
-    "SOYOUARE"
-   ],
-   "resolvedBy": "GMGN",
-   "lastSnapshotISO": "2026-11-17T12:21:00-05:00"
   },
   {
    "wallet": "7hBJ…8vRC",
