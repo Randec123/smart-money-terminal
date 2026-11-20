@@ -1,927 +1,933 @@
 {
-  "asOfET": "4:22 PM ET, Nov 20, 2026",
-  "asOfISO": "2026-11-20T16:22:00-05:00",
+  "asOfET": "6:15 PM ET, Nov 20, 2026",
+  "asOfISO": "2026-11-20T18:15:00-05:00",
   "source": "GMGN Solana signed-in session capture",
   "nansenConnected": false,
   "notes": [
     "Nansen was not connected. smartWalletCount and kolCount are null so the UI shows an em dash; never write 0 to mean missing.",
     "Ages on smartFlows are as GMGN displayed them at capture, not live-updating ages. Pass-1 tape ages are as of the first DOM read of the 1h Smart Inflow board; pass-2 rows (new unique wallet+token+action+usd+CA after a scroll) are as of the second read; pass-3 rows are as of a later scroll read; pass-4 rows are as of a reload of the same monitor URL plus further scrolls. A Paused indicator can appear when the mouse is over the board; it was not used as a reason to drop rows. First-pass screenshot is inflow.png (taken before the pass-1 DOM read). Scroll-pass screenshots are inflow-2.png and inflow-pass3.png; the post-reload screenshot is inflow-3.png. The live board reorders, so screenshot token sets can diverge from the stored rows. Trending screenshot is trend.png, taken a few seconds before the 1h table was read; some MC and 1h-change values moved slightly in between, so the JSON matches the later DOM read, not every number visible in trend.png. Flow values here are from the DOM reads, not retimed from the PNGs.",
-    "Price was not displayed as a usable column on the GMGN Solana 1h trending table, so price is null for every row. Symbols were taken from the ticker text beside each avatar; names from the fuller label beside it, including GMGN-truncated names (The Trader on Trader, DacityCoin on DCTY, Singularit... on Singularity, RAMENCOIN on RAMEN, The Last T... on ONODA, nothing ev... on chud, Tolyota In... on TI3000, DacityCoin on DCTY). Rank 1 typography is symbol 'Trader' then name 'The Trader'. Rank 2 typography is symbol '🤏' then name '🤏'. Rank 3 typography is symbol 'DCTY' then name 'DacityCoin'. Rank 4 typography is symbol 'Punch' then name 'Punch'. Rank 5 typography is symbol 'Singularity' then name 'Singularit...'. Rank 6 typography is symbol 'RAMEN' then name 'RAMENCOIN'. Rank 7 typography is symbol 'ONODA' then name 'The Last T...'. Rank 8 typography is symbol 'chud' then name 'nothing ev...'. Rank 9 typography is symbol 'TI3000' then name 'Tolyota In...'. Rank 10 typography is symbol 'DCTY' then name 'DacityCoin'. 2 distinct DCTY CAs appear on the trending table (rank 3 name 'DacityCoin' CA 7DQQ…jE9k; rank 10 name 'DacityCoin' CA 2oK1…pump). Inflow DEBT is B7he…pump Inflow chud is EV7J…pump (matches trending) Inflow SQQQ is SQQQ…WaGE Inflow Needle is DJBv…aZ4Z Inflow PUP is GjrC…pump Inflow Dihvidend is GFuV…vc11, HQk7…pump Inflow EURC is Hzwq…DKtr Inflow CRUE is GnG6…3psd Inflow 🤏 is 757E…pump (matches trending) Inflow TTWO is TTWo…FbKo Inflow oskkpu is 83RX…pump Inflow KICK is 3p1B…pump Inflow Trader is BYKQ…GenX (matches trending) Inflow pls is 9Boi…pump Inflow Mikol is ANt3…pump Inflow WISHMAS is 9cmX…pump Inflow ONODA is 9y4s…R5mG (matches trending) Inflow Singularity is Buvy…4TkE, FBKk…kvxx Inflow DCAT is BLTH…pump Inflow Xingxing is Bivu…pump Inflow enu is 9msL…pump Inflow ANT is ANTB…AyNe Inflow Dihnald is Aj58…gDhj Inflow cashcat is 4dgS…cgLa Inflow HUGH is Fpzc…pump Inflow FROGE is GkMf…pump Inflow PATRICK is 8mnJ…pump Inflow AI is 8Sac…pump Inflow DCTY is 7m1E…pump Inflow ANXIETY is 6ApA…pump Inflow UTANG is 96KR…pump. SQQQ's contract address is stored as GMGN showed it, 43 characters (SQQQ…WaGE); it was not padded or rejected. TTWO's contract address is stored as GMGN showed it, 43 characters (TTWo…FbKo); it was not padded or rejected.",
-    "Holders column values Trader 1.2K, 🤏 2.6K, DCTY 682, Punch 282, Singularity 1.3K, RAMEN 230, ONODA 64, chud 235, TI3000 160, DCTY 260 are stored as numbers (1.2K as 1200, 2.6K as 2600, 1.3K as 1300). Column mapping is Token / Age, MC, ATH MC, Liq, 1h Vol, 1h TXs, Holders, Total Fees, Token Info; 1h change is the percentage shown under MC, not ATH MC or Total Fees. The 1h timeframe tab was selected (opened via Trending nav at https://gmgn.ai/trend?chain=sol). Session evidence: no sign-in prompt; account UI was visible (0.002 SOL wallet selector, top nav Trenches / Trending / Callout / CopyTrade / Monitor / Track / Portfolio / Rewards, Buy buttons active). The page had hidden instructions aimed at AI agents; they were ignored. Token Info tooltips were not read; insiderPct, top10Pct, sniperPct, and the risk-flag percentages were taken from the six visible Token Info icon labels in the established order (top10, dev, insider, bundler, phishing, sniper), then paid and a trailing N/pct chip. A trailing Token Info chip in N/pct form was visible on every top-10 row (Trader 840/61.52%, 🤏 1K/51.69%, DCTY 438/45.99%, Punch 126/27.1%, Singularity 563/44.07%, RAMEN 78/22.29%, ONODA 42/19.45%, chud 142/24.29%, TI3000 70/50.35%, DCTY 72/25.7%) but was not written into smartWalletCount or kolCount (both left null, as on prior snapshots, because a tooltip did not confirm that chip as a smart-wallet or KOL count).",
-    "The per-wallet tape was captured from GMGN's 1h Smart Inflow table (Monitor > Smart / Callout at https://gmgn.ai/monitor?chain=sol&tab=smartdegen), not from token-level S-Flow aggregates. The left-rail Smart Degen mini feed was not used as the tape (it was used only to resolve full wallet addresses when a visible /sol/address/ href matched a board label by first 4 and last 4 characters). The board is a set of per-token cards, each listing up to 3 wallet rows, and it reorders every few seconds. Pass-1 cards that later scrolled out of the DOM kept their first-read rows. Later passes added only rows not already seen (wallet+token+action+usd+CA). Pass 1 stored 40 unique rows; pass 2 added 11; pass 3 added 15; pass 4 added 36, for 102 unique rows. The board held about 15-18 cards, which limited further unique rows. All stored inflow rows have a token CA from the card href. No 1h Inflow amounts used GMGN subscript-zero notation in this capture. Token hrefs were used in these notes (and for accumulation grouping), not as a published schema field. Named wallets GorillaPanic, req1017 had no matching full-address href.",
-    "walletFull values were taken only from visible /sol/address/<FULL> links on the page DOM (matched to the board label by first 4 and last 4 characters). 19 distinct wallets had a visible address link, covering 32 flow rows: HpNt...6XVh (HpNtLoBAipDRdbDiMvx6odqw9akSqLbRhUNquP6z6XVh), DPGy...69PW (DPGy5w732wbajkoWDZeRyUXpYZ1t2eNtSCyDiDWh69PW), Aqyy...LaSu (Aqyy9Ab7z9unAZ1EjQgrqPZwfst5AbWj8AApEd1ZLaSu), Em9n...iDDY (Em9nqUGrpFkDko9kyrWQ9fK3WCUekQqmZvqihPtDiDDY), 4gG4...LjDa (4gG4V4iPrwfimbmG3ZzMLKJx8ursKxB8dkfW4PbiLjDa), 3Ycn...3RZm (3Ycnj9RqQW3eEhhaxFPzbeDSzpeKRFytT9KHJLtd3RZm), 32jx...qfou (32jxMWXiupSmcs7SCztuaCwNHdZbGfsUSfyDaxnYqfou), BRx8...Tsym (BRx8TP6HsD9srJ62rcYizjAHyZ5mt3cp8wPBEZioTsym), 4Auf...7dhB (4AufoJdJBgMfev5feAgFiXwmsQRxZgtCaT1zVdWV7dhB), 8ZVN...A62R (8ZVN9Puj6UMPESqFxkYs9PJk9Cf9m1FwZDMo1iAeA62R), bob1...SNfP (bob1AWyp8javDRyF6gC88L4Ch5JnwxDoxYdJhFUSNfP), ssss...WwFk (sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk), AwDA...wpLU (AwDAD5VkxpKL3fhTcsxWCTe8kfbbL8LgE4QSB76LwpLU), CTJL...GMwD (CTJL7oBK4Zjzh7TdJTbmaB11kCsap4NsFjw8CYQKGMwD), HRi6...w4UE (HRi6wFAWbVVi8atcxyah11Fqj9Z478zLtzMyKVVow4UE), FBDK...mjCi (FBDKbPxxq6JBAwqLaSrp7tKsSG188gucYDdfJawomjCi), C62J...546a (C62JGd7WQGXmvwtvucWUw4hPv8ifTKoq3fGZ6wKi546a), HLHR...ErdV (HLHRPKB9mJChReRz6nQuLA2kp9nigtNuyRe4vcdTErdV), 6vHT...vkWb (6vHTn67M8X5wDFB2eaeHu1WL8R6a7Xk6WfiBe6u5vkWb). No other full-address hrefs were visible on this board, so walletFull is omitted on the remaining rows (not guessed from truncated prefixes/suffixes, and not backfilled from earlier snapshots). Drawers were not opened and the clipboard was not read. Abbreviated wallet labels are stored as GMGN showed them.",
-    "Risk flags (from the trending / Token Info column, icon order top10, dev, insider, bundler, phishing, sniper): Trader / The Trader (BYKQ…GenX): Dev Sell All (DS); insiders 0.0%; bundlers 28.0%; phishing 9.0%; sniper 1.75%; paid $299 CTO. 🤏 / 🤏 (757E…pump): Dev Sell All (DS); insiders 0.6%; bundlers 18.0%; phishing 2.0%; sniper 0.8%; paid Unpaid. DCTY / DacityCoin (7DQQ…jE9k): Dev Sell All (DS); insiders 0.0%; bundlers 24.0%; phishing 8.0%; sniper 0.0%; paid $299 CTO. Punch / Punch (14f4…XGUB): Dev Sell All (DS); insiders 0.1%; bundlers 20.0%; phishing 0.4%; sniper 0.32%; paid Unpaid. Singularity / Singularit... (7R4M…pump): Dev Sell All (DS); insiders 0.0%; bundlers 9.0%; phishing 12.0%; sniper 0.0%; paid $299. RAMEN / RAMENCOIN (Ekyd…pump): Dev Sell All (DS); insiders 0.0%; bundlers 5.0%; phishing 2.0%; sniper 0.0%; paid Unpaid. ONODA / The Last T... (9y4s…R5mG): Dev Sell All (DS); insiders 0.0%; bundlers 11.0%; phishing 4.0%; sniper 0.0%; paid Unpaid. chud / nothing ev... (EV7J…pump): Dev hold 52%; insiders 0.0%; bundlers 10.0%; phishing 2.0%; sniper 53.39%; paid Unpaid. TI3000 / Tolyota In... (7HGB…pump): Dev hold 0.1%; insiders 0.8%; bundlers 35.0%; phishing 3.0%; sniper 0.13%; paid Unpaid. DCTY / DacityCoin (2oK1…pump): Dev hold 0.2%; insiders 3.0%; bundlers 32.0%; phishing 4.0%; sniper 0.16%; paid $299 CTO. No honeypot, mint, or freeze badge was visible on the top 10 Token Info labels.",
-    "Accumulation on the Smart Inflow tape (2+ distinct wallets First Buy and/or Buy More, counted separately when the same ticker has different CAs): SQQQ (SQQQ…WaGE): 4 wallets — 6JDJ...X27H Buy More $+99.13; 8ZVN...A62R Buy More $+265.3; 8ZVN...A62R Buy More $+331.6; C62J...546a Buy More $+201.1; 7rAZ...6nE8 Buy More $+69.72; CRUE (GnG6…3psd): 3 wallets — 9yHA...FQSP Buy More $+239.1; 42wu...VEYm Buy More $+207.9; DPGy...69PW First Buy $+330.7; EURC (Hzwq…DKtr): 3 wallets — 9yHA...FQSP Buy More $+239.1; 42wu...VEYm Buy More $+207.9; DPGy...69PW Buy More $+330.7; ANXIETY (6ApA…pump): 2 wallets — BRx8...Tsym Buy More $+197.7; 6qY7...M6D5 First Buy $+370.7; FROGE (GkMf…pump): 2 wallets — ssss...WwFk Buy More $+46.67; sSSS...6nbr First Buy $+60.77; KICK (3p1B…pump): 2 wallets — BD22...MwAt Buy More $+288.4; BBYm...gZCF Buy More $+303.5; Mikol (ANt3…pump): 2 wallets — CHXH...Fqn9 First Buy $+66.5; 9qq9...giqU Buy More $+569.9; Needle (DJBv…aZ4Z): 2 wallets — 6JDJ...X27H First Buy $+99.11; 8ZVN...A62R Buy More $+265.2; PATRICK (8mnJ…pump): 2 wallets — 5Evb...cXcz First Buy $+10.12; G3Hw...GHJj Buy More $+360.2; Singularity (FBKk…kvxx): 2 wallets — ssss...WwFk First Buy $+24.26; GorillaPanic Buy More $+198.3; UTANG (96KR…pump): 2 wallets — GzTC...S7u1 Buy More $+81.83; 5iZv...pTyV Buy More $+168.4; cashcat (4dgS…cgLa): 2 wallets — AwDA...wpLU Buy More $+170.6; 9mRw...36LU Buy More $+184.2; chud (EV7J…pump): 2 wallets — Tuzc...yp9c First Buy $+200.2; 32jx...qfou First Buy $+50.94; pls (9Boi…pump): 2 wallets — 3Ycn...3RZm Buy More $+16.14; DfyG...Bx5d First Buy $+148.1. Single-wallet buy-side only (not flagged as accumulation): DEBT (B7he…pump): 1 wallet — HpNt...6XVh First Buy $+61.92; TTWO (TTWo…FbKo): 1 wallet — mV16...2hCa Buy More $-95.5; mV16...2hCa Buy More $-192.5; oskkpu (83RX…pump): 1 wallet — 8KJX...dzRb Buy More $+20.69; Trader (BYKQ…GenX): 1 wallet — CLDQ...h3aM First Buy $+25.28; WISHMAS (9cmX…pump): 1 wallet — Eh3q...vQTX Buy More $+33.39; Singularity (Buvy…4TkE): 1 wallet — bob1...SNfP First Buy $+1.013; DCAT (BLTH…pump): 1 wallet — G2oZ...wazx Buy More $+709.5; enu (9msL…pump): 1 wallet — GwZy...S71C Buy More $+133; AI (8Sac…pump): 1 wallet — 5Evb...cXcz First Buy $-6.1; DCTY (7m1E…pump): 1 wallet — mV16...2hCa Buy More $-201.9.",
-    "Several Sell All / Sell Partial / buy-side rows displayed a USD amount whose sign did not match the action. The displayed number was stored unflipped (not corrected, and not stored as 0 or a guess): SQQQ 5t4T...Ds1p Sell All $+78.99; Needle 5t4T...Ds1p Sell All $+78.67; PUP J4d9...45zn Sell All $+1.571; PUP FViW...mnGn Sell All $+7.919; PUP CHXG...6jVx Sell All $+21.29; 🤏 CQjY...cGmz Sell All $+4.526; TTWO Em9n...iDDY Sell Partial $+13.16; TTWO mV16...2hCa Buy More $-95.5; ONODA BRx8...Tsym Sell All $+45.82; ONODA GhLi...YnFi Sell All $+58.24; Dihvidend 7JVQ...7jJr Sell Partial $+127.1; Xingxing BmqM...R19W Sell All $+5.959; enu BYxx...VTTh Sell Partial $+109.1; Dihnald 8RzY...VNcn Sell All $+0.262; DEBT CTJL...GMwD Sell All $+0.696; DEBT HRi6...w4UE Sell All $+0.659; DEBT FBDK...mjCi Sell All $+0.719; Dihvidend 7JVQ...7jJr Sell All $+9.278; cashcat AwDA...wpLU Sell All $+11.93; cashcat 9mRw...36LU Sell All $+7.835; CRUE 4Auf...7dhB Sell All $+4.85; EURC 4Auf...7dhB Sell Partial $+4.85; AI 5Evb...cXcz First Buy $-6.1; AI C4er...1fWG Sell All $+6.215; AI AfF3...Rbgf Sell All $+4.813; DCTY mV16...2hCa Buy More $-201.9; TTWO mV16...2hCa Buy More $-192.5."
+    "Price was not displayed as a usable column on the GMGN Solana 1h trending table, so price is null for every row. Symbols were taken from the ticker text beside each avatar; names from the fuller label beside it, including GMGN-truncated names (Farmcoin on FARM, BUST on Bust, The Cancer... on Rasonque, Jensen Hua... on JENSEN, LeBrain Ja... on LEBRAIN, Bot Shelf on SHELF, The Cancer... on Rasonque, BANDANA CA... on BANDANA, The Mental... on MENTALIST). Rank 1 typography is symbol 'FARM' then name 'Farmcoin'. Rank 2 typography is symbol 'Bust' then name 'BUST'. Rank 3 typography is symbol 'Rasonque' then name 'The Cancer...'. Rank 4 typography is symbol 'JENSEN' then name 'Jensen Hua...'. Rank 5 typography is symbol 'MONKE' then name 'MONKE'. Rank 6 typography is symbol 'LEBRAIN' then name 'LeBrain Ja...'. Rank 7 typography is symbol 'SHELF' then name 'Bot Shelf'. Rank 8 typography is symbol 'Rasonque' then name 'The Cancer...'. Rank 9 typography is symbol 'BANDANA' then name 'BANDANA CA...'. Rank 10 typography is symbol 'MENTALIST' then name 'The Mental...'. 2 distinct Rasonque CAs appear on the trending table (rank 3 name 'The Cancer...' CA 7Afp…pump; rank 8 name 'The Cancer...' CA 7U6w…pump). Inflow STM is iUGZ…BAGS Inflow AVGOx is XsgS…PJGo Inflow CSI is 6EHT…pump Inflow Bust is EoV9…pump (matches trending) Inflow Horse is A5RD…pump Inflow Cockroach is 9GDE…pump Inflow Trader is BYKQ…GenX Inflow JUP is JUPy…DvCN Inflow VEYRA is i6Ao…pump Inflow NVDA is NVDA…xNjv Inflow NIO is 27QV…pump Inflow CHAIR1 is CJJk…pump Inflow LBJ is 5s7T…pump Inflow NEURALINK is Prek…bw9S Inflow mihao is 4Cxj…pump Inflow RUDY is GRMR…pump Inflow PATRICK is 8mnJ…pump Inflow Singularity is 7R4M…pump Inflow GREENDILDO is EHL6…LoaC Inflow ELON is HSMD…pump Inflow Pengis is JAB2…6Rfc Inflow TTWO is TTWo…FbKo Inflow CHONCE is 5mof…urge Inflow BANDANA is 2KRb…N2yx (matches trending) Inflow hSOL is he1i…tn9A Inflow NORA is ei5D…pump Inflow GIGAPIG is ELbC…pump Inflow BIGP is D3g7…pump Inflow SHELF is GJQm…pump (matches trending) Inflow Max is 5qaP…pump Inflow GTN is GpiQ…pump Inflow INVESTOR is Cprf…pump Inflow LeBrain is CBhu…pump Inflow VETO is 4xWR…pump Inflow cbBTC is cbbt…iMij Inflow GLDx is Xsv9…D3re Inflow GOOSE is 2fqw…CnN2 Inflow SNAPMATIC is Gt9q…pump. STM's contract address is stored as GMGN showed it, 43 characters (iUGZ…BAGS); it was not padded or rejected. AVGOx's contract address is stored as GMGN showed it, 43 characters (XsgS…PJGo); it was not padded or rejected. JUP's contract address is stored as GMGN showed it, 43 characters (JUPy…DvCN); it was not padded or rejected. NVDA's contract address is stored as GMGN showed it, 43 characters (NVDA…xNjv); it was not padded or rejected. NEURALINK's contract address is stored as GMGN showed it, 43 characters (Prek…bw9S); it was not padded or rejected. TTWO's contract address is stored as GMGN showed it, 43 characters (TTWo…FbKo); it was not padded or rejected. hSOL's contract address is stored as GMGN showed it, 43 characters (he1i…tn9A); it was not padded or rejected. cbBTC's contract address is stored as GMGN showed it, 43 characters (cbbt…iMij); it was not padded or rejected. GLDx's contract address is stored as GMGN showed it, 43 characters (Xsv9…D3re); it was not padded or rejected.",
+    "Holders column values FARM 1.6K, Bust 599, Rasonque 94, JENSEN 1K, MONKE 899, LEBRAIN 151, SHELF 348, Rasonque 86, BANDANA 448, MENTALIST 774 are stored as numbers (1.6K as 1600, 1K as 1000). Column mapping is Token / Age, MC, ATH MC, Liq, 1h Vol, 1h TXs, Holders, Total Fees, Token Info; 1h change is the percentage shown under MC, not ATH MC or Total Fees. The 1h timeframe tab was selected (opened via Trending nav at https://gmgn.ai/trend?chain=sol). Session evidence: no sign-in prompt; account UI was visible (0.002 SOL wallet selector, top nav Trenches / Trending / Callout / CopyTrade / Monitor / Track / Portfolio / Rewards, Buy buttons active). The page had hidden instructions aimed at AI agents; they were ignored. Token Info tooltips were not read; insiderPct, top10Pct, sniperPct, and the risk-flag percentages were taken from the six visible Token Info icon labels in the established order (top10, dev, insider, bundler, phishing, sniper), then paid and a trailing N/pct chip. A trailing Token Info chip in N/pct form was visible on every top-10 row () but was not written into smartWalletCount or kolCount (both left null, as on prior snapshots, because a tooltip did not confirm that chip as a smart-wallet or KOL count).",
+    "The per-wallet tape was captured from GMGN's 1h Smart Inflow table (Monitor > Smart / Callout at https://gmgn.ai/monitor?chain=sol&tab=smartdegen), not from token-level S-Flow aggregates. The left-rail Smart Degen mini feed was not used as the tape (it was used only to resolve full wallet addresses when a visible /sol/address/ href matched a board label by first 4 and last 4 characters). The board is a set of per-token cards, each listing up to 3 wallet rows, and it reorders every few seconds. Pass-1 cards that later scrolled out of the DOM kept their first-read rows. Later passes added only rows not already seen (wallet+token+action+usd+CA). Pass 1 stored 44 unique rows; pass 2 added 40; pass 3 added 0; pass 4 added 20, for 104 unique rows. The board held about 15-18 cards, which limited further unique rows. All stored inflow rows have a token CA from the card href. One or more 1h Inflow amounts used GMGN subscript-zero notation and were stored with usd=null, not a guessed number: JUP AfF3...Rbgf Sell Partial $-0.0₄15; JUP 4AFA...cwFE Sell Partial $-0.0₅27. Token hrefs were used in these notes (and for accumulation grouping), not as a published schema field. No named (non-abbreviated) wallets appeared on the tape.",
+    "walletFull values were taken only from visible /sol/address/<FULL> links on the page DOM (matched to the board label by first 4 and last 4 characters). 11 distinct wallets had a visible address link, covering 24 flow rows: ssss...WwFk (sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk), sSSS...6nbr (sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr), tBVF...tmFt (tBVFi3uhRxDtn4C5Sxy7D6yUQ2qUfp2qkjcoL6ttmFt), 4AFA...cwFE (4AFAUcHL7NoHKJkkRNc7j1jfyW83hPdGknXS7cZPcwFE), G2oZ...wazx (G2oZrd1kAUrWE1E4YPZoMi9euBeGgvtKVj5CHSdwazx), BGxP...je6q (BGxPqwZUo3bXA1tc7C6XwqDm3z1KyhfergyYSsb6je6q), 5gnt...ymih (5gnt5xSDXpovnFLMvUR7Nxvq1cg38rNCddB5sKkgymih), GeoV...WKRo (GeoV6vnc1wdn4cgY8bL2upKMamvfPMKvKDr6N1mqWKRo), C5Dp...cWXT (C5DpkPYuxs4otsdUZyfHoG8fNQ1DBhuh1GwtL3n6cWXT), E25M...NBgD (E25MmzzfvPN8yVrCZoK599imxrZuZaLKJAWwgkTuNBgD), Ceys...bxzn (Ceysg4HJBHTFW7NXtbqJD8dUfKQ6WWAuFkWeFapHbxzn). No other full-address hrefs were visible on this board, so walletFull is omitted on the remaining rows (not guessed from truncated prefixes/suffixes, and not backfilled from earlier snapshots). Drawers were not opened and the clipboard was not read. Abbreviated wallet labels are stored as GMGN showed them.",
+    "Risk flags (from the trending / Token Info column, icon order top10, dev, insider, bundler, phishing, sniper): FARM / Farmcoin (6WcB…pump): Dev Sell All (DS); insiders 0.1%; bundlers 23.0%; phishing 4.0%; sniper 0.07%; paid Unpaid. Bust / BUST (EoV9…pump): Dev Sell All (DS); insiders 0.0%; bundlers 17.0%; phishing 9.0%; sniper 0.0%; paid $299 CTO. Rasonque / The Cancer... (7Afp…pump): Dev Sell All (DS); insiders 0.0%; bundlers 3.0%; phishing 1.0%; sniper 0.0%; paid Unpaid. JENSEN / Jensen Hua... (HMs3…pump): Dev hold 0.1%; insiders 0.0%; bundlers 0.3%; phishing 0.0%; sniper 0.3%; paid $299. MONKE / MONKE (CKhL…ik9M): Dev Sell All (DS); insiders 0.0%; bundlers 19.0%; phishing 5.0%; sniper 0.0%; paid Unpaid. LEBRAIN / LeBrain Ja... (DHgE…Wz9F): Dev Sell All (DS); insiders 0.0%; bundlers 4.0%; phishing 4.0%; sniper 0.0%; paid Unpaid. SHELF / Bot Shelf (GJQm…pump): Dev Sell All (DS); insiders 0.0%; bundlers 33.0%; phishing 3.0%; sniper 0.0%; paid Unpaid. Rasonque / The Cancer... (7U6w…pump): Dev Sell All (DS); insiders 0.0%; bundlers 20.0%; phishing 3.0%; sniper 0.0%; paid Unpaid. BANDANA / BANDANA CA... (2KRb…N2yx): Dev Sell All (DS); insiders 2.0%; bundlers 15.0%; phishing 16.0%; sniper 0.0%; paid $299. MENTALIST / The Mental... (EHhp…pump): Dev Sell All (DS); insiders 0.0%; bundlers 4.0%; phishing 9.0%; sniper 38.26%; paid Unpaid. No honeypot, mint, or freeze badge was visible on the top 10 Token Info labels.",
+    "Accumulation on the Smart Inflow tape (2+ distinct wallets First Buy and/or Buy More, counted separately when the same ticker has different CAs): CHONCE (5mof…urge): 4 wallets — C5Dp...cWXT First Buy $+47.47; 4c54...nSiH First Buy $+40.51; 6t7p...qNUk First Buy $+40.58; Ceys...bxzn First Buy $+44.3; AVGOx (XsgS…PJGo): 2 wallets — 43Dz...kMSS Buy More $+68.08; G3Hw...GHJj Buy More $+320.4; Bust (EoV9…pump): 2 wallets — ssss...WwFk First Buy $+8.885; sSSS...6nbr First Buy $+217.1; ssss...WwFk First Buy $+57.53; CSI (6EHT…pump): 2 wallets — 43Dz...kMSS First Buy $+68.06; G3Hw...GHJj Buy More $+320.3; Cockroach (9GDE…pump): 2 wallets — Ftv1...1ujd First Buy $+98.53; tBVF...tmFt First Buy $+100.8; GIGAPIG (ELbC…pump): 2 wallets — 72tA...Bu5D First Buy $+7.902; FuTZ...WjUC First Buy $+342.8; Horse (A5RD…pump): 2 wallets — 8PQx...VP9z Buy More $-202.3; mV16...2hCa First Buy $+126.5; LeBrain (CBhu…pump): 2 wallets — 6qud...KMhy Buy More $+412; 72tA...Bu5D First Buy $+45.76; Max (5qaP…pump): 2 wallets — 9sg8...TycH Buy More $+103; Fixu...bH33 Buy More $+509.4; RUDY (GRMR…pump): 2 wallets — ssss...WwFk Buy More $+49.29; sSSS...6nbr First Buy $+136.1; VEYRA (i6Ao…pump): 2 wallets — 8KJX...dzRb Buy More $+69.21; rnmp...WRBB Buy More $+35.35; cbBTC (cbbt…iMij): 2 wallets — 4AFA...cwFE Buy More $+38.96; 5iZv...pTyV Buy More $+54.27. Single-wallet buy-side only (not flagged as accumulation): STM (iUGZ…BAGS): 1 wallet — BMam...QxuT First Buy $+25.58; Trader (BYKQ…GenX): 1 wallet — Ar7n...SZx8 Buy More $+179.5; CHAIR1 (CJJk…pump): 1 wallet — G2oZ...wazx Buy More $+581.6; LBJ (5s7T…pump): 1 wallet — GZC7...tAZr First Buy $+67.28; NEURALINK (Prek…bw9S): 1 wallet — GZC7...tAZr Buy More $+20.48; mihao (4Cxj…pump): 1 wallet — ALk1...h4Ex Buy More $+3.439; PATRICK (8mnJ…pump): 1 wallet — C4er...1fWG First Buy $+14.04; GREENDILDO (EHL6…LoaC): 1 wallet — 9NwC...PDE7 Buy More $+43.77; BANDANA (2KRb…N2yx): 1 wallet — CFzV...ze4V First Buy $+49.24; hSOL (he1i…tn9A): 1 wallet — CFzV...ze4V Buy More $+49.74; BIGP (D3g7…pump): 1 wallet — choo...cusx First Buy $+34.53; SHELF (GJQm…pump): 1 wallet — BnBS...zXHq Buy More $+3.099; INVESTOR (Cprf…pump): 1 wallet — AfF3...Rbgf First Buy $+104.2; GLDx (Xsv9…D3re): 1 wallet — HLHR...ErdV Buy More $-178.5; GOOSE (2fqw…CnN2): 1 wallet — HLHR...ErdV Buy More $-178.5.",
+    "Several Sell All / Sell Partial / buy-side rows displayed a USD amount whose sign did not match the action. The displayed number was stored unflipped (not corrected, and not stored as 0 or a guess): Bust 7uDF...hJTC Sell All $+3.264; Horse 8PQx...VP9z Buy More $-202.3; VEYRA 72tA...Bu5D Sell All $+34.1; NVDA 4FKd...99uH Sell Partial $+6.183; NVDA 7uDF...hJTC Sell Partial $+67.16; NVDA 7rZ4...HR4T Sell Partial $+1.866; NIO 7rZ4...HR4T Sell All $+1.131; NEURALINK 2Jpt...otbC Sell Partial $+3.754; GREENDILDO 6yxo...BibW Sell All $+16.67; ELON DJze...C5Rv Sell All $+3.98; TTWO 4AFA...cwFE Sell Partial $+191.2; NORA 72tA...Bu5D Sell All $+5.922; GIGAPIG CWry...WYnD Sell All $+0.44; GTN GwZy...S71C Sell All $+2.097; LeBrain 6KrW...5PdJ Sell All $+0.169; Trader BRx8...Tsym Sell Partial $+407.4; GLDx HLHR...ErdV Buy More $-178.5; Bust sSSS...6nbr Sell All $+12.83; GOOSE HLHR...ErdV Buy More $-178.5; SNAPMATIC ssss...WwFk Sell All $+1.269."
   ],
   "trending": [
     {
-      "address": "BYKQkHKMWHidNBLQXgt7NX4PLUtJZRYGLWQYkJzPGenX",
-      "name": "The Trader",
-      "symbol": "Trader",
+      "address": "6WcBvG5MaLSmk6BzDEZzEXc1JFrSopcmUdgfo2R4pump",
+      "name": "Farmcoin",
+      "symbol": "FARM",
       "chain": "solana",
       "price": null,
-      "mc": 103300,
-      "chg1h": 651,
-      "vol1h": 572100,
-      "holders": 1200,
-      "insiderPct": 0,
-      "top10Pct": 19,
-      "sniperPct": 1.75,
-      "smartWalletCount": null,
-      "kolCount": null
-    },
-    {
-      "address": "757EyTJfCqf5EQWFCQ4UV9HP2QcPHZYEdeVn9yrzpump",
-      "name": "🤏",
-      "symbol": "🤏",
-      "chain": "solana",
-      "price": null,
-      "mc": 127100,
-      "chg1h": 6700,
-      "vol1h": 178900,
-      "holders": 2600,
-      "insiderPct": 0.6,
-      "top10Pct": 9,
-      "sniperPct": 0.8,
-      "smartWalletCount": null,
-      "kolCount": null
-    },
-    {
-      "address": "7DQQejSWt4bgNmGFFD6QPPUA1YLoMxWhz4roN5CQjE9k",
-      "name": "DacityCoin",
-      "symbol": "DCTY",
-      "chain": "solana",
-      "price": null,
-      "mc": 76800,
-      "chg1h": -71.3,
-      "vol1h": 711800,
-      "holders": 682,
-      "insiderPct": 0,
-      "top10Pct": 19,
-      "sniperPct": 0,
-      "smartWalletCount": null,
-      "kolCount": null
-    },
-    {
-      "address": "14f4Qittkc21455ZWHbNA7BJH2mTbjWV6XUu52qTXGUB",
-      "name": "Punch",
-      "symbol": "Punch",
-      "chain": "solana",
-      "price": null,
-      "mc": 9900,
-      "chg1h": 209.3,
-      "vol1h": 210400,
-      "holders": 282,
+      "mc": 91400,
+      "chg1h": 4700,
+      "vol1h": 108100,
+      "holders": 1600,
       "insiderPct": 0.1,
-      "top10Pct": 19,
-      "sniperPct": 0.32,
+      "top10Pct": 9,
+      "sniperPct": 0.07,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "7R4MP6VX7n3RMNhL9zsk5Zu5ibZvwq8npUYnRq7epump",
-      "name": "Singularit...",
-      "symbol": "Singularity",
+      "address": "EoV9JQYi57tqjyQbWLdXVarYpEu82FsP8SDnkbFmpump",
+      "name": "BUST",
+      "symbol": "Bust",
       "chain": "solana",
       "price": null,
-      "mc": 171400,
-      "chg1h": 814.2,
-      "vol1h": 625900,
-      "holders": 1300,
+      "mc": 79800,
+      "chg1h": 396.6,
+      "vol1h": 186000,
+      "holders": 599,
       "insiderPct": 0,
-      "top10Pct": 14,
+      "top10Pct": 21,
       "sniperPct": 0,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "Ekyd2WJWnc6DMTdMHjucHcNcC8TGF5DhLV9om3VRpump",
-      "name": "RAMENCOIN",
-      "symbol": "RAMEN",
+      "address": "7AfpieqMnoUJ6toDQX8HK1SHcW6C5zUMZCDZ9Lspump",
+      "name": "The Cancer...",
+      "symbol": "Rasonque",
       "chain": "solana",
       "price": null,
-      "mc": 5900,
-      "chg1h": 193.7,
-      "vol1h": 236700,
-      "holders": 230,
+      "mc": 4700,
+      "chg1h": 148.5,
+      "vol1h": 109100,
+      "holders": 94,
       "insiderPct": 0,
-      "top10Pct": 25,
+      "top10Pct": 29,
       "sniperPct": 0,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "9y4sH7DevvWpEuKMKvraADnnNx1SBsun9pLCivaPR5mG",
-      "name": "The Last T...",
-      "symbol": "ONODA",
+      "address": "HMs3u6rx8DSruPMhXL7N2N5hciXTXa49e9LCoj1Apump",
+      "name": "Jensen Hua...",
+      "symbol": "JENSEN",
       "chain": "solana",
       "price": null,
-      "mc": 3400,
-      "chg1h": 31,
-      "vol1h": 148800,
-      "holders": 64,
+      "mc": 1000000,
+      "chg1h": 13500,
+      "vol1h": 713800,
+      "holders": 1000,
       "insiderPct": 0,
-      "top10Pct": 23,
+      "top10Pct": 37,
+      "sniperPct": 0.3,
+      "smartWalletCount": null,
+      "kolCount": null
+    },
+    {
+      "address": "CKhLonB7wvi94op6XScJa8Y6jKEsw3VngbVNXB5Uik9M",
+      "name": "MONKE",
+      "symbol": "MONKE",
+      "chain": "solana",
+      "price": null,
+      "mc": 84200,
+      "chg1h": -26,
+      "vol1h": 243100,
+      "holders": 899,
+      "insiderPct": 0,
+      "top10Pct": 18,
       "sniperPct": 0,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "EV7J2QaPXPytSkM1LD9GPRkgAbmSEr9R3kYiXBzbpump",
-      "name": "nothing ev...",
-      "symbol": "chud",
+      "address": "DHgE4is2ywsvP5pQbawT5jvKoJyazPpzS1gJ6cEUWz9F",
+      "name": "LeBrain Ja...",
+      "symbol": "LEBRAIN",
       "chain": "solana",
       "price": null,
-      "mc": 49400,
-      "chg1h": 1200,
-      "vol1h": 113700,
-      "holders": 235,
+      "mc": 4100,
+      "chg1h": 46.9,
+      "vol1h": 177200,
+      "holders": 151,
       "insiderPct": 0,
-      "top10Pct": 62,
-      "sniperPct": 53.39,
+      "top10Pct": 24,
+      "sniperPct": 0,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "7HGBbDGr1G5ByYrirMD17ZA7hWhh7K8CBVHEXc1Npump",
-      "name": "Tolyota In...",
-      "symbol": "TI3000",
+      "address": "GJQmJ1kEMi8Q1GyZiif6qXaYqBdpaafvFVsFyYoCpump",
+      "name": "Bot Shelf",
+      "symbol": "SHELF",
       "chain": "solana",
       "price": null,
-      "mc": 14800,
-      "chg1h": 574.7,
-      "vol1h": 115200,
-      "holders": 160,
-      "insiderPct": 0.8,
-      "top10Pct": 27,
-      "sniperPct": 0.13,
+      "mc": 38100,
+      "chg1h": 469.9,
+      "vol1h": 113300,
+      "holders": 348,
+      "insiderPct": 0,
+      "top10Pct": 24,
+      "sniperPct": 0,
       "smartWalletCount": null,
       "kolCount": null
     },
     {
-      "address": "2oK1KyeKEwDLv6UxfoemUXZHmwMDwYHRaBkTMLjwpump",
-      "name": "DacityCoin",
-      "symbol": "DCTY",
+      "address": "7U6wGjGutoXUKeKxVE19eam4f4ZvaVNHkLG91b9Vpump",
+      "name": "The Cancer...",
+      "symbol": "Rasonque",
       "chain": "solana",
       "price": null,
-      "mc": 30000,
-      "chg1h": 328.6,
-      "vol1h": 94100,
-      "holders": 260,
-      "insiderPct": 3,
-      "top10Pct": 32,
-      "sniperPct": 0.16,
+      "mc": 4400,
+      "chg1h": 95.8,
+      "vol1h": 77300,
+      "holders": 86,
+      "insiderPct": 0,
+      "top10Pct": 22,
+      "sniperPct": 0,
+      "smartWalletCount": null,
+      "kolCount": null
+    },
+    {
+      "address": "2KRbMf4itijwsTHb5dQtiBpfptyNmhpVzmpdj4qqN2yx",
+      "name": "BANDANA CA...",
+      "symbol": "BANDANA",
+      "chain": "solana",
+      "price": null,
+      "mc": 95700,
+      "chg1h": 1400,
+      "vol1h": 184100,
+      "holders": 448,
+      "insiderPct": 2,
+      "top10Pct": 20,
+      "sniperPct": 0,
+      "smartWalletCount": null,
+      "kolCount": null
+    },
+    {
+      "address": "EHhpwU1Xu2yMegS9g8NkCCLfXKNXSMFiWs3APvZepump",
+      "name": "The Mental...",
+      "symbol": "MENTALIST",
+      "chain": "solana",
+      "price": null,
+      "mc": 33500,
+      "chg1h": 1500,
+      "vol1h": 52700,
+      "holders": 774,
+      "insiderPct": 0,
+      "top10Pct": 12,
+      "sniperPct": 38.26,
       "smartWalletCount": null,
       "kolCount": null
     }
   ],
   "smartFlows": [
     {
-      "wallet": "HpNt...6XVh",
+      "wallet": "BMam...QxuT",
       "action": "First Buy",
-      "token": "DEBT",
-      "usd": 61.92,
-      "age": "0s",
-      "walletFull": "HpNtLoBAipDRdbDiMvx6odqw9akSqLbRhUNquP6z6XVh"
+      "token": "STM",
+      "usd": 25.58,
+      "age": "41s"
     },
     {
-      "wallet": "BYxx...VTTh",
-      "action": "Sell Partial",
-      "token": "chud",
-      "usd": -845.5,
-      "age": "1s"
-    },
-    {
-      "wallet": "Co8z...vqPk",
-      "action": "Sell Partial",
-      "token": "chud",
-      "usd": -189.7,
-      "age": "2s"
-    },
-    {
-      "wallet": "Tuzc...yp9c",
-      "action": "First Buy",
-      "token": "chud",
-      "usd": 200.2,
-      "age": "6s"
-    },
-    {
-      "wallet": "5t4T...Ds1p",
-      "action": "Sell All",
-      "token": "SQQQ",
-      "usd": 78.99,
-      "age": "3s"
-    },
-    {
-      "wallet": "Aggd...EfgT",
-      "action": "Sell Partial",
-      "token": "SQQQ",
-      "usd": -116.1,
-      "age": "3s"
-    },
-    {
-      "wallet": "6JDJ...X27H",
+      "wallet": "43Dz...kMSS",
       "action": "Buy More",
-      "token": "SQQQ",
-      "usd": 99.13,
-      "age": "22s"
-    },
-    {
-      "wallet": "Aggd...EfgT",
-      "action": "Sell All",
-      "token": "Needle",
-      "usd": -117.4,
-      "age": "3s"
-    },
-    {
-      "wallet": "5t4T...Ds1p",
-      "action": "Sell All",
-      "token": "Needle",
-      "usd": 78.67,
-      "age": "4s"
-    },
-    {
-      "wallet": "6JDJ...X27H",
-      "action": "First Buy",
-      "token": "Needle",
-      "usd": 99.11,
-      "age": "22s"
-    },
-    {
-      "wallet": "J4d9...45zn",
-      "action": "Sell All",
-      "token": "PUP",
-      "usd": 1.571,
-      "age": "4s"
-    },
-    {
-      "wallet": "FViW...mnGn",
-      "action": "Sell All",
-      "token": "PUP",
-      "usd": 7.919,
-      "age": "1m"
-    },
-    {
-      "wallet": "CHXG...6jVx",
-      "action": "Sell All",
-      "token": "PUP",
-      "usd": 21.29,
-      "age": "5m"
-    },
-    {
-      "wallet": "req1017",
-      "action": "Sell All",
-      "token": "Dihvidend",
-      "usd": -15.7,
-      "age": "6s"
-    },
-    {
-      "wallet": "9yHA...FQSP",
-      "action": "Buy More",
-      "token": "EURC",
-      "usd": 239.1,
-      "age": "6s"
-    },
-    {
-      "wallet": "42wu...VEYm",
-      "action": "Buy More",
-      "token": "EURC",
-      "usd": 207.9,
-      "age": "6s"
-    },
-    {
-      "wallet": "DPGy...69PW",
-      "action": "Buy More",
-      "token": "EURC",
-      "usd": 330.7,
-      "age": "13s",
-      "walletFull": "DPGy5w732wbajkoWDZeRyUXpYZ1t2eNtSCyDiDWh69PW"
-    },
-    {
-      "wallet": "9yHA...FQSP",
-      "action": "Buy More",
-      "token": "CRUE",
-      "usd": 239.1,
-      "age": "6s"
-    },
-    {
-      "wallet": "42wu...VEYm",
-      "action": "Buy More",
-      "token": "CRUE",
-      "usd": 207.9,
-      "age": "6s"
-    },
-    {
-      "wallet": "DPGy...69PW",
-      "action": "First Buy",
-      "token": "CRUE",
-      "usd": 330.7,
-      "age": "13s",
-      "walletFull": "DPGy5w732wbajkoWDZeRyUXpYZ1t2eNtSCyDiDWh69PW"
-    },
-    {
-      "wallet": "Aqyy...LaSu",
-      "action": "Sell All",
-      "token": "🤏",
-      "usd": -3.6,
-      "age": "11s",
-      "walletFull": "Aqyy9Ab7z9unAZ1EjQgrqPZwfst5AbWj8AApEd1ZLaSu"
-    },
-    {
-      "wallet": "CQjY...cGmz",
-      "action": "Sell All",
-      "token": "🤏",
-      "usd": 4.526,
-      "age": "6m"
-    },
-    {
-      "wallet": "GZDR...m7ui",
-      "action": "Sell All",
-      "token": "🤏",
-      "usd": -46.7,
-      "age": "15m"
-    },
-    {
-      "wallet": "Em9n...iDDY",
-      "action": "Sell Partial",
-      "token": "TTWO",
-      "usd": 13.16,
-      "age": "13s",
-      "walletFull": "Em9nqUGrpFkDko9kyrWQ9fK3WCUekQqmZvqihPtDiDDY"
-    },
-    {
-      "wallet": "CQjY...cGmz",
-      "action": "Sell Partial",
-      "token": "TTWO",
-      "usd": -8.6,
-      "age": "48s"
-    },
-    {
-      "wallet": "mV16...2hCa",
-      "action": "Buy More",
-      "token": "TTWO",
-      "usd": -95.5,
-      "age": "49s"
-    },
-    {
-      "wallet": "4gG4...LjDa",
-      "action": "Sell Partial",
-      "token": "oskkpu",
-      "usd": -161.1,
-      "age": "13s",
-      "walletFull": "4gG4V4iPrwfimbmG3ZzMLKJx8ursKxB8dkfW4PbiLjDa"
-    },
-    {
-      "wallet": "8KJX...dzRb",
-      "action": "Buy More",
-      "token": "oskkpu",
-      "usd": 20.69,
-      "age": "2m"
-    },
-    {
-      "wallet": "choo...cusx",
-      "action": "Sell All",
-      "token": "oskkpu",
-      "usd": -27.6,
-      "age": "12m"
-    },
-    {
-      "wallet": "Em9n...iDDY",
-      "action": "Sell All",
-      "token": "KICK",
-      "usd": -37.6,
-      "age": "13s",
-      "walletFull": "Em9nqUGrpFkDko9kyrWQ9fK3WCUekQqmZvqihPtDiDDY"
-    },
-    {
-      "wallet": "BD22...MwAt",
-      "action": "Buy More",
-      "token": "KICK",
-      "usd": 288.4,
-      "age": "3m"
-    },
-    {
-      "wallet": "BBYm...gZCF",
-      "action": "Buy More",
-      "token": "KICK",
-      "usd": 303.5,
-      "age": "3m"
-    },
-    {
-      "wallet": "CLDQ...h3aM",
-      "action": "First Buy",
-      "token": "Trader",
-      "usd": 25.28,
-      "age": "15s"
-    },
-    {
-      "wallet": "An1U...rTgw",
-      "action": "Sell All",
-      "token": "Trader",
-      "usd": -19.8,
-      "age": "3m"
-    },
-    {
-      "wallet": "FGz4...9XYZ",
-      "action": "Sell All",
-      "token": "Trader",
-      "usd": -5.4,
-      "age": "3m"
-    },
-    {
-      "wallet": "3Ycn...3RZm",
-      "action": "Buy More",
-      "token": "pls",
-      "usd": 16.14,
-      "age": "20s",
-      "walletFull": "3Ycnj9RqQW3eEhhaxFPzbeDSzpeKRFytT9KHJLtd3RZm"
-    },
-    {
-      "wallet": "DfyG...Bx5d",
-      "action": "First Buy",
-      "token": "pls",
-      "usd": 148.1,
-      "age": "3m"
-    },
-    {
-      "wallet": "ABvB...YZGo",
-      "action": "Sell All",
-      "token": "pls",
-      "usd": -30.2,
-      "age": "4m"
-    },
-    {
-      "wallet": "CHXH...Fqn9",
-      "action": "First Buy",
-      "token": "Mikol",
-      "usd": 66.5,
-      "age": "20s"
-    },
-    {
-      "wallet": "9qq9...giqU",
-      "action": "Buy More",
-      "token": "Mikol",
-      "usd": 569.9,
-      "age": "4m"
-    },
-    {
-      "wallet": "EErU...uRJa",
-      "action": "Sell All",
-      "token": "chud",
-      "usd": -40.8,
-      "age": "1s"
-    },
-    {
-      "wallet": "32jx...qfou",
-      "action": "First Buy",
-      "token": "chud",
-      "usd": 50.94,
-      "age": "1s",
-      "walletFull": "32jxMWXiupSmcs7SCztuaCwNHdZbGfsUSfyDaxnYqfou"
-    },
-    {
-      "wallet": "Tuzc...yp9c",
-      "action": "Sell All",
-      "token": "chud",
-      "usd": -52.5,
-      "age": "1s"
-    },
-    {
-      "wallet": "Eh3q...vQTX",
-      "action": "Buy More",
-      "token": "WISHMAS",
-      "usd": 33.39,
-      "age": "4s"
-    },
-    {
-      "wallet": "BRx8...Tsym",
-      "action": "Sell All",
-      "token": "ONODA",
-      "usd": 45.82,
-      "age": "5s",
-      "walletFull": "BRx8TP6HsD9srJ62rcYizjAHyZ5mt3cp8wPBEZioTsym"
-    },
-    {
-      "wallet": "GhLi...YnFi",
-      "action": "Sell All",
-      "token": "ONODA",
-      "usd": 58.24,
-      "age": "10m"
-    },
-    {
-      "wallet": "4Auf...7dhB",
-      "action": "Sell All",
-      "token": "ONODA",
-      "usd": -23.4,
-      "age": "12m",
-      "walletFull": "4AufoJdJBgMfev5feAgFiXwmsQRxZgtCaT1zVdWV7dhB"
-    },
-    {
-      "wallet": "8ZVN...A62R",
-      "action": "Buy More",
-      "token": "SQQQ",
-      "usd": 265.3,
-      "age": "6s",
-      "walletFull": "8ZVN9Puj6UMPESqFxkYs9PJk9Cf9m1FwZDMo1iAeA62R"
-    },
-    {
-      "wallet": "8ZVN...A62R",
-      "action": "Buy More",
-      "token": "Needle",
-      "usd": 265.2,
-      "age": "6s",
-      "walletFull": "8ZVN9Puj6UMPESqFxkYs9PJk9Cf9m1FwZDMo1iAeA62R"
-    },
-    {
-      "wallet": "bob1...SNfP",
-      "action": "First Buy",
-      "token": "Singularity",
-      "usd": 1.013,
-      "age": "8s",
-      "walletFull": "bob1AWyp8javDRyF6gC88L4Ch5JnwxDoxYdJhFUSNfP"
-    },
-    {
-      "wallet": "7JVQ...7jJr",
-      "action": "Sell Partial",
-      "token": "Dihvidend",
-      "usd": 127.1,
-      "age": "12s"
-    },
-    {
-      "wallet": "G2oZ...wazx",
-      "action": "Buy More",
-      "token": "DCAT",
-      "usd": 709.5,
-      "age": "49s"
-    },
-    {
-      "wallet": "BmqM...R19W",
-      "action": "Sell All",
-      "token": "Xingxing",
-      "usd": 5.959,
-      "age": "52s"
-    },
-    {
-      "wallet": "72tA...Bu5D",
-      "action": "Sell All",
-      "token": "Xingxing",
-      "usd": -3.4,
-      "age": "18m"
-    },
-    {
-      "wallet": "6FpZ...5Nsd",
-      "action": "Sell All",
-      "token": "Xingxing",
-      "usd": -15,
-      "age": "23m"
-    },
-    {
-      "wallet": "BYxx...VTTh",
-      "action": "Sell Partial",
-      "token": "enu",
-      "usd": 109.1,
-      "age": "53s"
-    },
-    {
-      "wallet": "5Evb...cXcz",
-      "action": "Sell All",
-      "token": "enu",
-      "usd": -18.3,
-      "age": "7m"
-    },
-    {
-      "wallet": "GwZy...S71C",
-      "action": "Buy More",
-      "token": "enu",
-      "usd": 133,
-      "age": "7m"
-    },
-    {
-      "wallet": "BGxP...je6q",
-      "action": "Sell All",
-      "token": "ANT",
-      "usd": -210.4,
-      "age": "57s"
-    },
-    {
-      "wallet": "ssss...WwFk",
-      "action": "Sell Partial",
-      "token": "ANT",
-      "usd": -81.3,
-      "age": "5m",
-      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
-    },
-    {
-      "wallet": "GorillaPanic",
-      "action": "Sell Partial",
-      "token": "ANT",
-      "usd": -433.4,
-      "age": "8m"
-    },
-    {
-      "wallet": "8RzY...VNcn",
-      "action": "Sell All",
-      "token": "Dihnald",
-      "usd": 0.262,
-      "age": "1m"
-    },
-    {
-      "wallet": "42wu...VEYm",
-      "action": "Sell All",
-      "token": "Dihnald",
-      "usd": -0.27,
-      "age": "1m"
-    },
-    {
-      "wallet": "9yHA...FQSP",
-      "action": "Sell All",
-      "token": "Dihnald",
-      "usd": -5.7,
-      "age": "1m"
-    },
-    {
-      "wallet": "AwDA...wpLU",
-      "action": "Buy More",
-      "token": "cashcat",
-      "usd": 170.6,
-      "age": "1m",
-      "walletFull": "AwDAD5VkxpKL3fhTcsxWCTe8kfbbL8LgE4QSB76LwpLU"
-    },
-    {
-      "wallet": "9mRw...36LU",
-      "action": "Buy More",
-      "token": "cashcat",
-      "usd": 184.2,
-      "age": "1m"
-    },
-    {
-      "wallet": "CTJL...GMwD",
-      "action": "Sell All",
-      "token": "DEBT",
-      "usd": 0.696,
-      "age": "8s",
-      "walletFull": "CTJL7oBK4Zjzh7TdJTbmaB11kCsap4NsFjw8CYQKGMwD"
-    },
-    {
-      "wallet": "HRi6...w4UE",
-      "action": "Sell All",
-      "token": "DEBT",
-      "usd": 0.659,
-      "age": "8s",
-      "walletFull": "HRi6wFAWbVVi8atcxyah11Fqj9Z478zLtzMyKVVow4UE"
-    },
-    {
-      "wallet": "FBDK...mjCi",
-      "action": "Sell All",
-      "token": "DEBT",
-      "usd": 0.719,
-      "age": "8s",
-      "walletFull": "FBDKbPxxq6JBAwqLaSrp7tKsSG188gucYDdfJawomjCi"
-    },
-    {
-      "wallet": "8ZVN...A62R",
-      "action": "Buy More",
-      "token": "SQQQ",
-      "usd": 331.6,
-      "age": "8s",
-      "walletFull": "8ZVN9Puj6UMPESqFxkYs9PJk9Cf9m1FwZDMo1iAeA62R"
-    },
-    {
-      "wallet": "C62J...546a",
-      "action": "Buy More",
-      "token": "SQQQ",
-      "usd": 201.1,
-      "age": "9s",
-      "walletFull": "C62JGd7WQGXmvwtvucWUw4hPv8ifTKoq3fGZ6wKi546a"
-    },
-    {
-      "wallet": "7rAZ...6nE8",
-      "action": "Buy More",
-      "token": "SQQQ",
-      "usd": 69.72,
-      "age": "26s"
-    },
-    {
-      "wallet": "ssss...WwFk",
-      "action": "First Buy",
-      "token": "Singularity",
-      "usd": 24.26,
-      "age": "9s",
-      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
-    },
-    {
-      "wallet": "GorillaPanic",
-      "action": "Buy More",
-      "token": "Singularity",
-      "usd": 198.3,
-      "age": "11m"
-    },
-    {
-      "wallet": "sSSS...6nbr",
-      "action": "Sell All",
-      "token": "Singularity",
-      "usd": -14.7,
-      "age": "19m"
-    },
-    {
-      "wallet": "ssss...WwFk",
-      "action": "Sell All",
-      "token": "HUGH",
-      "usd": -159.6,
-      "age": "9s",
-      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
-    },
-    {
-      "wallet": "5Evb...cXcz",
-      "action": "Sell All",
-      "token": "HUGH",
-      "usd": -517.9,
-      "age": "8m"
-    },
-    {
-      "wallet": "sSSS...6nbr",
-      "action": "Sell All",
-      "token": "HUGH",
-      "usd": -380,
-      "age": "17m"
-    },
-    {
-      "wallet": "7JVQ...7jJr",
-      "action": "Sell All",
-      "token": "Dihvidend",
-      "usd": 9.278,
-      "age": "12s"
-    },
-    {
-      "wallet": "AwDA...wpLU",
-      "action": "Sell All",
-      "token": "cashcat",
-      "usd": 11.93,
-      "age": "18s",
-      "walletFull": "AwDAD5VkxpKL3fhTcsxWCTe8kfbbL8LgE4QSB76LwpLU"
-    },
-    {
-      "wallet": "9mRw...36LU",
-      "action": "Sell All",
-      "token": "cashcat",
-      "usd": 7.835,
-      "age": "20s"
-    },
-    {
-      "wallet": "HLHR...ErdV",
-      "action": "Sell All",
-      "token": "cashcat",
-      "usd": -0.76,
-      "age": "46s",
-      "walletFull": "HLHRPKB9mJChReRz6nQuLA2kp9nigtNuyRe4vcdTErdV"
-    },
-    {
-      "wallet": "bob1...SNfP",
-      "action": "Sell All",
-      "token": "Singularity",
-      "usd": -0.33,
-      "age": "18s",
-      "walletFull": "bob1AWyp8javDRyF6gC88L4Ch5JnwxDoxYdJhFUSNfP"
-    },
-    {
-      "wallet": "ssss...WwFk",
-      "action": "Buy More",
-      "token": "FROGE",
-      "usd": 46.67,
-      "age": "18s",
-      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
-    },
-    {
-      "wallet": "sSSS...6nbr",
-      "action": "First Buy",
-      "token": "FROGE",
-      "usd": 60.77,
-      "age": "3m"
-    },
-    {
-      "wallet": "4Auf...7dhB",
-      "action": "Sell All",
-      "token": "CRUE",
-      "usd": 4.85,
-      "age": "19s",
-      "walletFull": "4AufoJdJBgMfev5feAgFiXwmsQRxZgtCaT1zVdWV7dhB"
-    },
-    {
-      "wallet": "6vHT...vkWb",
-      "action": "Sell All",
-      "token": "CRUE",
-      "usd": -0.74,
-      "age": "19s",
-      "walletFull": "6vHTn67M8X5wDFB2eaeHu1WL8R6a7Xk6WfiBe6u5vkWb"
-    },
-    {
-      "wallet": "6vHT...vkWb",
-      "action": "Sell Partial",
-      "token": "EURC",
-      "usd": -0.74,
-      "age": "19s",
-      "walletFull": "6vHTn67M8X5wDFB2eaeHu1WL8R6a7Xk6WfiBe6u5vkWb"
-    },
-    {
-      "wallet": "4Auf...7dhB",
-      "action": "Sell Partial",
-      "token": "EURC",
-      "usd": 4.85,
-      "age": "19s",
-      "walletFull": "4AufoJdJBgMfev5feAgFiXwmsQRxZgtCaT1zVdWV7dhB"
-    },
-    {
-      "wallet": "5Evb...cXcz",
-      "action": "First Buy",
-      "token": "PATRICK",
-      "usd": 10.12,
-      "age": "20s"
-    },
-    {
-      "wallet": "72tA...Bu5D",
-      "action": "Sell All",
-      "token": "PATRICK",
-      "usd": -235.5,
-      "age": "22s"
-    },
-    {
-      "wallet": "G3Hw...GHJj",
-      "action": "Buy More",
-      "token": "PATRICK",
-      "usd": 360.2,
-      "age": "1m"
-    },
-    {
-      "wallet": "5Evb...cXcz",
-      "action": "First Buy",
-      "token": "AI",
-      "usd": -6.1,
-      "age": "21s"
-    },
-    {
-      "wallet": "C4er...1fWG",
-      "action": "Sell All",
-      "token": "AI",
-      "usd": 6.215,
-      "age": "10m"
+      "token": "AVGOx",
+      "usd": 68.08,
+      "age": "41s"
     },
     {
       "wallet": "AfF3...Rbgf",
       "action": "Sell All",
-      "token": "AI",
-      "usd": 4.813,
-      "age": "14m"
+      "token": "AVGOx",
+      "usd": -0.042,
+      "age": "52s"
     },
     {
-      "wallet": "mV16...2hCa",
+      "wallet": "G3Hw...GHJj",
       "action": "Buy More",
-      "token": "DCTY",
-      "usd": -201.9,
-      "age": "22s"
-    },
-    {
-      "wallet": "mV16...2hCa",
-      "action": "Buy More",
-      "token": "TTWO",
-      "usd": -192.5,
-      "age": "22s"
-    },
-    {
-      "wallet": "BRx8...Tsym",
-      "action": "Buy More",
-      "token": "ANXIETY",
-      "usd": 197.7,
-      "age": "24s",
-      "walletFull": "BRx8TP6HsD9srJ62rcYizjAHyZ5mt3cp8wPBEZioTsym"
-    },
-    {
-      "wallet": "6qY7...M6D5",
-      "action": "First Buy",
-      "token": "ANXIETY",
-      "usd": 370.7,
-      "age": "1m"
-    },
-    {
-      "wallet": "6zZy...xKj8",
-      "action": "Sell Partial",
-      "token": "ANXIETY",
-      "usd": -24.3,
+      "token": "AVGOx",
+      "usd": 320.4,
       "age": "2m"
     },
     {
-      "wallet": "GzTC...S7u1",
+      "wallet": "43Dz...kMSS",
+      "action": "First Buy",
+      "token": "CSI",
+      "usd": 68.06,
+      "age": "41s"
+    },
+    {
+      "wallet": "G3Hw...GHJj",
       "action": "Buy More",
-      "token": "UTANG",
-      "usd": 81.83,
-      "age": "25s"
+      "token": "CSI",
+      "usd": 320.3,
+      "age": "2m"
+    },
+    {
+      "wallet": "AfF3...Rbgf",
+      "action": "Sell All",
+      "token": "CSI",
+      "usd": -5.8,
+      "age": "2m"
+    },
+    {
+      "wallet": "7uDF...hJTC",
+      "action": "Sell All",
+      "token": "Bust",
+      "usd": 3.264,
+      "age": "42s"
+    },
+    {
+      "wallet": "ssss...WwFk",
+      "action": "First Buy",
+      "token": "Bust",
+      "usd": 8.885,
+      "age": "1m",
+      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
+    },
+    {
+      "wallet": "sSSS...6nbr",
+      "action": "First Buy",
+      "token": "Bust",
+      "usd": 217.1,
+      "age": "2m",
+      "walletFull": "sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr"
+    },
+    {
+      "wallet": "8PQx...VP9z",
+      "action": "Buy More",
+      "token": "Horse",
+      "usd": -202.3,
+      "age": "43s"
+    },
+    {
+      "wallet": "tBVF...tmFt",
+      "action": "Sell All",
+      "token": "Horse",
+      "usd": -27.7,
+      "age": "1m",
+      "walletFull": "tBVFi3uhRxDtn4C5Sxy7D6yUQ2qUfp2qkjcoL6ttmFt"
+    },
+    {
+      "wallet": "CWry...WYnD",
+      "action": "Sell All",
+      "token": "Horse",
+      "usd": -21.9,
+      "age": "2m"
+    },
+    {
+      "wallet": "Ftv1...1ujd",
+      "action": "First Buy",
+      "token": "Cockroach",
+      "usd": 98.53,
+      "age": "48s"
+    },
+    {
+      "wallet": "Ar7n...SZx8",
+      "action": "Buy More",
+      "token": "Trader",
+      "usd": 179.5,
+      "age": "52s"
+    },
+    {
+      "wallet": "9ZaL...rZRV",
+      "action": "Sell Partial",
+      "token": "Trader",
+      "usd": -1200,
+      "age": "1m"
+    },
+    {
+      "wallet": "9wcr...hfTH",
+      "action": "Sell All",
+      "token": "Trader",
+      "usd": -1500,
+      "age": "2m"
+    },
+    {
+      "wallet": "AfF3...Rbgf",
+      "action": "Sell Partial",
+      "token": "JUP",
+      "usd": null,
+      "age": "52s"
+    },
+    {
+      "wallet": "4AFA...cwFE",
+      "action": "Sell Partial",
+      "token": "JUP",
+      "usd": null,
+      "age": "5m",
+      "walletFull": "4AFAUcHL7NoHKJkkRNc7j1jfyW83hPdGknXS7cZPcwFE"
+    },
+    {
+      "wallet": "72tA...Bu5D",
+      "action": "Sell All",
+      "token": "VEYRA",
+      "usd": 34.1,
+      "age": "1m"
+    },
+    {
+      "wallet": "8KJX...dzRb",
+      "action": "Buy More",
+      "token": "VEYRA",
+      "usd": 69.21,
+      "age": "1m"
+    },
+    {
+      "wallet": "rnmp...WRBB",
+      "action": "Buy More",
+      "token": "VEYRA",
+      "usd": 35.35,
+      "age": "2m"
+    },
+    {
+      "wallet": "4FKd...99uH",
+      "action": "Sell Partial",
+      "token": "NVDA",
+      "usd": 6.183,
+      "age": "1m"
+    },
+    {
+      "wallet": "7uDF...hJTC",
+      "action": "Sell Partial",
+      "token": "NVDA",
+      "usd": 67.16,
+      "age": "2m"
+    },
+    {
+      "wallet": "7rZ4...HR4T",
+      "action": "Sell Partial",
+      "token": "NVDA",
+      "usd": 1.866,
+      "age": "33m"
+    },
+    {
+      "wallet": "4FKd...99uH",
+      "action": "Sell All",
+      "token": "NIO",
+      "usd": -1.9,
+      "age": "1m"
+    },
+    {
+      "wallet": "7rZ4...HR4T",
+      "action": "Sell All",
+      "token": "NIO",
+      "usd": 1.131,
+      "age": "33m"
+    },
+    {
+      "wallet": "Gote...xhd8",
+      "action": "Sell All",
+      "token": "NIO",
+      "usd": -36.3,
+      "age": "34m"
+    },
+    {
+      "wallet": "G2oZ...wazx",
+      "action": "Buy More",
+      "token": "CHAIR1",
+      "usd": 581.6,
+      "age": "1m",
+      "walletFull": "G2oZrd1kAUrWE1E4YPZoMi9euBeGgvtKVj5CHSdwazx"
+    },
+    {
+      "wallet": "GZC7...tAZr",
+      "action": "First Buy",
+      "token": "LBJ",
+      "usd": 67.28,
+      "age": "1m"
+    },
+    {
+      "wallet": "GZC7...tAZr",
+      "action": "Buy More",
+      "token": "NEURALINK",
+      "usd": 20.48,
+      "age": "1m"
+    },
+    {
+      "wallet": "7Hmk...JiGQ",
+      "action": "Sell Partial",
+      "token": "NEURALINK",
+      "usd": -131.6,
+      "age": "20m"
+    },
+    {
+      "wallet": "2Jpt...otbC",
+      "action": "Sell Partial",
+      "token": "NEURALINK",
+      "usd": 3.754,
+      "age": "23m"
+    },
+    {
+      "wallet": "BGxP...je6q",
+      "action": "Sell All",
+      "token": "mihao",
+      "usd": -31.6,
+      "age": "1m",
+      "walletFull": "BGxPqwZUo3bXA1tc7C6XwqDm3z1KyhfergyYSsb6je6q"
+    },
+    {
+      "wallet": "ALk1...h4Ex",
+      "action": "Buy More",
+      "token": "mihao",
+      "usd": 3.439,
+      "age": "4m"
+    },
+    {
+      "wallet": "ssss...WwFk",
+      "action": "Buy More",
+      "token": "RUDY",
+      "usd": 49.29,
+      "age": "1m",
+      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
+    },
+    {
+      "wallet": "sSSS...6nbr",
+      "action": "First Buy",
+      "token": "RUDY",
+      "usd": 136.1,
+      "age": "1m",
+      "walletFull": "sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr"
+    },
+    {
+      "wallet": "HUcY...rAdY",
+      "action": "Sell All",
+      "token": "RUDY",
+      "usd": -0.29,
+      "age": "20m"
+    },
+    {
+      "wallet": "Ar7n...SZx8",
+      "action": "Sell All",
+      "token": "PATRICK",
+      "usd": -175,
+      "age": "1m"
+    },
+    {
+      "wallet": "udH4...JfJL",
+      "action": "Sell All",
+      "token": "PATRICK",
+      "usd": -35.7,
+      "age": "9m"
+    },
+    {
+      "wallet": "C4er...1fWG",
+      "action": "First Buy",
+      "token": "PATRICK",
+      "usd": 14.04,
+      "age": "10m"
+    },
+    {
+      "wallet": "72tA...Bu5D",
+      "action": "Sell All",
+      "token": "Singularity",
+      "usd": -346.8,
+      "age": "1m"
+    },
+    {
+      "wallet": "Gone...JUTu",
+      "action": "Sell All",
+      "token": "Singularity",
+      "usd": -55.7,
+      "age": "1m"
+    },
+    {
+      "wallet": "5Evb...cXcz",
+      "action": "Sell All",
+      "token": "Singularity",
+      "usd": -58.8,
+      "age": "1m"
+    },
+    {
+      "wallet": "9NwC...PDE7",
+      "action": "Buy More",
+      "token": "GREENDILDO",
+      "usd": 43.77,
+      "age": "4s"
+    },
+    {
+      "wallet": "5iZv...pTyV",
+      "action": "Sell All",
+      "token": "GREENDILDO",
+      "usd": -49.2,
+      "age": "3m"
+    },
+    {
+      "wallet": "6yxo...BibW",
+      "action": "Sell All",
+      "token": "GREENDILDO",
+      "usd": 16.67,
+      "age": "3m"
+    },
+    {
+      "wallet": "5gnt...ymih",
+      "action": "Sell All",
+      "token": "ELON",
+      "usd": -7.1,
+      "age": "4s",
+      "walletFull": "5gnt5xSDXpovnFLMvUR7Nxvq1cg38rNCddB5sKkgymih"
+    },
+    {
+      "wallet": "DJze...C5Rv",
+      "action": "Sell All",
+      "token": "ELON",
+      "usd": 3.98,
+      "age": "38s"
+    },
+    {
+      "wallet": "GeoV...WKRo",
+      "action": "Sell All",
+      "token": "Pengis",
+      "usd": -19.8,
+      "age": "5s",
+      "walletFull": "GeoV6vnc1wdn4cgY8bL2upKMamvfPMKvKDr6N1mqWKRo"
+    },
+    {
+      "wallet": "GeoV...WKRo",
+      "action": "Sell Partial",
+      "token": "TTWO",
+      "usd": -19.4,
+      "age": "5s",
+      "walletFull": "GeoV6vnc1wdn4cgY8bL2upKMamvfPMKvKDr6N1mqWKRo"
+    },
+    {
+      "wallet": "4AFA...cwFE",
+      "action": "Sell Partial",
+      "token": "TTWO",
+      "usd": 191.2,
+      "age": "1m",
+      "walletFull": "4AFAUcHL7NoHKJkkRNc7j1jfyW83hPdGknXS7cZPcwFE"
+    },
+    {
+      "wallet": "CWry...WYnD",
+      "action": "Sell Partial",
+      "token": "TTWO",
+      "usd": -0.97,
+      "age": "4m"
+    },
+    {
+      "wallet": "C5Dp...cWXT",
+      "action": "First Buy",
+      "token": "CHONCE",
+      "usd": 47.47,
+      "age": "6s",
+      "walletFull": "C5DpkPYuxs4otsdUZyfHoG8fNQ1DBhuh1GwtL3n6cWXT"
+    },
+    {
+      "wallet": "4c54...nSiH",
+      "action": "First Buy",
+      "token": "CHONCE",
+      "usd": 40.51,
+      "age": "6s"
+    },
+    {
+      "wallet": "6t7p...qNUk",
+      "action": "First Buy",
+      "token": "CHONCE",
+      "usd": 40.58,
+      "age": "6s"
+    },
+    {
+      "wallet": "tBVF...tmFt",
+      "action": "First Buy",
+      "token": "Cockroach",
+      "usd": 100.8,
+      "age": "7s",
+      "walletFull": "tBVFi3uhRxDtn4C5Sxy7D6yUQ2qUfp2qkjcoL6ttmFt"
+    },
+    {
+      "wallet": "GHoJ...bh9z",
+      "action": "Sell All",
+      "token": "BANDANA",
+      "usd": -97.2,
+      "age": "9s"
+    },
+    {
+      "wallet": "CFzV...ze4V",
+      "action": "First Buy",
+      "token": "BANDANA",
+      "usd": 49.24,
+      "age": "32s"
+    },
+    {
+      "wallet": "BMam...QxuT",
+      "action": "Sell Partial",
+      "token": "BANDANA",
+      "usd": -81.9,
+      "age": "1m"
+    },
+    {
+      "wallet": "GHoJ...bh9z",
+      "action": "Sell Partial",
+      "token": "hSOL",
+      "usd": -472,
+      "age": "9s"
+    },
+    {
+      "wallet": "CFzV...ze4V",
+      "action": "Buy More",
+      "token": "hSOL",
+      "usd": 49.74,
+      "age": "32s"
+    },
+    {
+      "wallet": "BMam...QxuT",
+      "action": "Sell Partial",
+      "token": "hSOL",
+      "usd": -81.1,
+      "age": "1m"
+    },
+    {
+      "wallet": "72tA...Bu5D",
+      "action": "Sell All",
+      "token": "NORA",
+      "usd": 5.922,
+      "age": "10s"
+    },
+    {
+      "wallet": "72tA...Bu5D",
+      "action": "First Buy",
+      "token": "GIGAPIG",
+      "usd": 7.902,
+      "age": "11s"
+    },
+    {
+      "wallet": "CWry...WYnD",
+      "action": "Sell All",
+      "token": "GIGAPIG",
+      "usd": 0.44,
+      "age": "8m"
+    },
+    {
+      "wallet": "FuTZ...WjUC",
+      "action": "First Buy",
+      "token": "GIGAPIG",
+      "usd": 342.8,
+      "age": "12m"
+    },
+    {
+      "wallet": "mV16...2hCa",
+      "action": "First Buy",
+      "token": "Horse",
+      "usd": 126.5,
+      "age": "13s"
+    },
+    {
+      "wallet": "choo...cusx",
+      "action": "First Buy",
+      "token": "BIGP",
+      "usd": 34.53,
+      "age": "18s"
+    },
+    {
+      "wallet": "BnBS...zXHq",
+      "action": "Buy More",
+      "token": "SHELF",
+      "usd": 3.099,
+      "age": "26s"
+    },
+    {
+      "wallet": "HUDQ...qepV",
+      "action": "Sell All",
+      "token": "SHELF",
+      "usd": -3.9,
+      "age": "28s"
+    },
+    {
+      "wallet": "DbEu...N6q9",
+      "action": "Sell All",
+      "token": "SHELF",
+      "usd": -2.1,
+      "age": "28s"
+    },
+    {
+      "wallet": "9sg8...TycH",
+      "action": "Buy More",
+      "token": "Max",
+      "usd": 103,
+      "age": "33s"
+    },
+    {
+      "wallet": "Fixu...bH33",
+      "action": "Buy More",
+      "token": "Max",
+      "usd": 509.4,
+      "age": "7m"
+    },
+    {
+      "wallet": "H7PA...h3mB",
+      "action": "Sell All",
+      "token": "GTN",
+      "usd": -5.9,
+      "age": "36s"
+    },
+    {
+      "wallet": "GwZy...S71C",
+      "action": "Sell All",
+      "token": "GTN",
+      "usd": 2.097,
+      "age": "1m"
+    },
+    {
+      "wallet": "7rAZ...6nE8",
+      "action": "Sell All",
+      "token": "GTN",
+      "usd": -2,
+      "age": "3m"
+    },
+    {
+      "wallet": "AfF3...Rbgf",
+      "action": "First Buy",
+      "token": "INVESTOR",
+      "usd": 104.2,
+      "age": "39s"
+    },
+    {
+      "wallet": "ssss...WwFk",
+      "action": "Sell All",
+      "token": "INVESTOR",
+      "usd": -253.2,
+      "age": "4m",
+      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
+    },
+    {
+      "wallet": "sSSS...6nbr",
+      "action": "Sell All",
+      "token": "INVESTOR",
+      "usd": -367.3,
+      "age": "7m",
+      "walletFull": "sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr"
+    },
+    {
+      "wallet": "6qud...KMhy",
+      "action": "Buy More",
+      "token": "LeBrain",
+      "usd": 412,
+      "age": "40s"
+    },
+    {
+      "wallet": "72tA...Bu5D",
+      "action": "First Buy",
+      "token": "LeBrain",
+      "usd": 45.76,
+      "age": "40s"
+    },
+    {
+      "wallet": "6KrW...5PdJ",
+      "action": "Sell All",
+      "token": "LeBrain",
+      "usd": 0.169,
+      "age": "3m"
+    },
+    {
+      "wallet": "5Evb...cXcz",
+      "action": "Sell All",
+      "token": "VETO",
+      "usd": -100.5,
+      "age": "45s"
+    },
+    {
+      "wallet": "4AFA...cwFE",
+      "action": "Buy More",
+      "token": "cbBTC",
+      "usd": 38.96,
+      "age": "13s",
+      "walletFull": "4AFAUcHL7NoHKJkkRNc7j1jfyW83hPdGknXS7cZPcwFE"
+    },
+    {
+      "wallet": "mV16...2hCa",
+      "action": "Sell Partial",
+      "token": "cbBTC",
+      "usd": -0.011,
+      "age": "2m"
     },
     {
       "wallet": "5iZv...pTyV",
       "action": "Buy More",
-      "token": "UTANG",
-      "usd": 168.4,
-      "age": "2m"
+      "token": "cbBTC",
+      "usd": 54.27,
+      "age": "3m"
+    },
+    {
+      "wallet": "G2oZ...wazx",
+      "action": "Sell All",
+      "token": "CHAIR1",
+      "usd": -330.2,
+      "age": "14s",
+      "walletFull": "G2oZrd1kAUrWE1E4YPZoMi9euBeGgvtKVj5CHSdwazx"
+    },
+    {
+      "wallet": "BRx8...Tsym",
+      "action": "Sell Partial",
+      "token": "Trader",
+      "usd": 407.4,
+      "age": "14s"
+    },
+    {
+      "wallet": "E25M...NBgD",
+      "action": "Sell All",
+      "token": "Trader",
+      "usd": -50.3,
+      "age": "16s",
+      "walletFull": "E25MmzzfvPN8yVrCZoK599imxrZuZaLKJAWwgkTuNBgD"
+    },
+    {
+      "wallet": "2nHs...v2Wi",
+      "action": "Sell All",
+      "token": "Trader",
+      "usd": -38.1,
+      "age": "17s"
+    },
+    {
+      "wallet": "HLHR...ErdV",
+      "action": "Buy More",
+      "token": "GLDx",
+      "usd": -178.5,
+      "age": "15s"
+    },
+    {
+      "wallet": "BRx8...Tsym",
+      "action": "Sell Partial",
+      "token": "GLDx",
+      "usd": -175,
+      "age": "3m"
+    },
+    {
+      "wallet": "J2sG...dAPN",
+      "action": "Sell Partial",
+      "token": "GLDx",
+      "usd": -16.5,
+      "age": "3m"
+    },
+    {
+      "wallet": "ssss...WwFk",
+      "action": "First Buy",
+      "token": "Bust",
+      "usd": 57.53,
+      "age": "15s",
+      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
+    },
+    {
+      "wallet": "sSSS...6nbr",
+      "action": "Sell All",
+      "token": "Bust",
+      "usd": 12.83,
+      "age": "28s",
+      "walletFull": "sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr"
+    },
+    {
+      "wallet": "HLHR...ErdV",
+      "action": "Buy More",
+      "token": "GOOSE",
+      "usd": -178.5,
+      "age": "15s"
+    },
+    {
+      "wallet": "BRx8...Tsym",
+      "action": "Sell All",
+      "token": "GOOSE",
+      "usd": -175,
+      "age": "3m"
+    },
+    {
+      "wallet": "J2sG...dAPN",
+      "action": "Sell All",
+      "token": "GOOSE",
+      "usd": -16.5,
+      "age": "3m"
+    },
+    {
+      "wallet": "Ceys...bxzn",
+      "action": "First Buy",
+      "token": "CHONCE",
+      "usd": 44.3,
+      "age": "19s",
+      "walletFull": "Ceysg4HJBHTFW7NXtbqJD8dUfKQ6WWAuFkWeFapHbxzn"
+    },
+    {
+      "wallet": "ssss...WwFk",
+      "action": "Sell All",
+      "token": "SNAPMATIC",
+      "usd": 1.269,
+      "age": "19s",
+      "walletFull": "sssssVx7D5Rdpxc5sG9dScUpRpa7jvZfGVkGiQZWwFk"
+    },
+    {
+      "wallet": "sSSS...6nbr",
+      "action": "Sell All",
+      "token": "SNAPMATIC",
+      "usd": -16.1,
+      "age": "15m",
+      "walletFull": "sSSSsssgBAnBq6ovHf89iKSwe9h2bvLmfbat9v76nbr"
+    },
+    {
+      "wallet": "GHoJ...bh9z",
+      "action": "Sell All",
+      "token": "BANDANA",
+      "usd": -89.9,
+      "age": "22s"
+    },
+    {
+      "wallet": "GHoJ...bh9z",
+      "action": "Sell Partial",
+      "token": "hSOL",
+      "usd": -465.5,
+      "age": "22s"
     }
   ]
 }
