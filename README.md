@@ -3,7 +3,7 @@
 A public, no-sign-in website that looks like the desktop and mobile WickHound Terminal Pages.
 
 - **Live, in the browser:** major-coin prices, Solana trending and new pools, boosted tokens, search, the selected token’s candlestick chart, and its public trades. These fetch straight from CoinGecko, GeckoTerminal, and DexScreener. No API keys.
-- **Snapshot, not live:** smart-wallet / KOL counts, GMGN Smart Net Inflow, early accumulation, and insider / top-10 / sniper percentages. These are read from [`data/smart-money.json`](data/smart-money.json) and are always labeled with an **as of** timestamp so they are never mistaken for a live feed.
+- **Snapshot, not live:** smart-wallet / KOL counts, GMGN Smart Net Inflow, early accumulation, and insider / top-10 / sniper percentages, from [`data/smart-money.json`](data/smart-money.json). Hyperliquid stock-perp wallet entries and entry-price charts are from [`data/hl-smart.json`](data/hl-smart.json). Both are labeled with an **as of** timestamp so they are never mistaken for a live feed.
 
 This repository is a static site: `index.html`, `app.js`, `styles.css`, and `data/smart-money.json`. There is no server-side code and there are no secrets.
 
@@ -150,9 +150,24 @@ Built from every GMGN Smart Net Inflow row in `data/smart-money.json` and its gi
 4. New wallets get `firstSeen` = that snapshot and label `GMGN smart inflow`.
 5. Re-rank by snapshots seen, then buys, distinct tokens, buy USD; keep the top 50 (repeat wallets win).
 
-`push-snapshot.sh` stages `data/smart-money.json`, `data/smart-wallets.json` and, when present and valid, `data/gmgn-top-wallets.json`.
+`push-snapshot.sh` stages `data/smart-money.json`, `data/smart-wallets.json`, `data/hl-smart.json` (when the Hyperliquid build succeeds) and, when present and valid, `data/gmgn-top-wallets.json`.
+
+## Hyperliquid Smart Money (stock perps)
+
+A snapshot page of profitable public Hyperliquid wallets on `xyz` stock perps (AAPL, MSFT, GOOGL, AMZN, META, NVDA, TSLA, COIN, MSTR, CRCL, NBIS, HOOD). Each name shows net direction and dollars, long and short size / wallet count at the size-weighted average entry, the mark, and percent from entry. Entries 15% or more from the mark are tagged **stale**. A candlestick chart (1D or 1H) draws horizontal lines at the average long and short entries. A short top-wallets list (truncated address, size, entry, uPnL) sits under the chart. The page is labeled **as of** Eastern Time with the disclaimer **Public-wallet snapshot, not a trade signal.**
+
+Live URL: `https://randec123.github.io/smart-money-terminal/#hl-smart/AAPL`
+
+The JSON is built by [`tools/build-hl-smart.py`](tools/build-hl-smart.py), which reuses `/workspace/early-gap/smart_entries.py` and the official Hyperliquid public API. It does not scrape third-party sites and does not write Early Gap Scout `state.json` or change that bot’s alert / dedupe behavior. The leaderboard cache is reused (refreshed at most once per ET day). `push-snapshot.sh` runs the build before each commit.
+
+Rebuild without publishing:
+
+```bash
+python3 /workspace/smart-money-terminal/tools/build-hl-smart.py
+```
 
 ## Local preview
+
 
 ```bash
 cd smart-money-terminal
@@ -162,8 +177,8 @@ python3 -m http.server 8080
 
 ## Layout
 
-- **Desktop:** dark terminal chrome, left sidebar (Live Alerts, Terminal, Accumulation, Flow, Watchlist, KOL Signals, Nansen Scan, Fib Pullback, Custom Alerts, Whale Flow, Tracked Wallets), majors ticker, then the workspace. Terminal is a three-column layout: token list, chart + setup cards, trades.
-- **Phone (max-width 768px):** single column, bottom tab bar — Trending, Alerts, Accum., Charts, Watch, Fib, Whales, Wallets. Token cards expand to show insider / top-10 / sniper (on the snapshot list), copy CA, and links.
+- **Desktop:** dark terminal chrome, left sidebar (Live Alerts, Terminal, Accumulation, Flow, Watchlist, HL Stock Perps, KOL Signals, Nansen Scan, Fib Pullback, Custom Alerts, Whale Flow, Tracked Wallets), majors ticker, then the workspace. Terminal is a three-column layout: token list, chart + setup cards, trades.
+- **Phone (max-width 768px):** single column, bottom tab bar — Trending, Alerts, Accum., Charts, Watch, HL, Fib, Whales, Wallets. Token cards expand to show insider / top-10 / sniper (on the snapshot list), copy CA, and links.
 
 ## Disclaimer
 

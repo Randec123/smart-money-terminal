@@ -360,7 +360,7 @@ table.data .side-sell { color: var(--red); font-weight: 600; }
   #chart-el, .chart-empty { min-height: 240px; }
   .mobile-tabs {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-columns: repeat(9, minmax(0, 1fr));
     position: fixed; left: 0; right: 0; bottom: 0;
     z-index: 20;
     background: var(--bg-elevated);
@@ -468,4 +468,62 @@ table.fib-table td { vertical-align: top; }
 @media (max-width: 768px) {
   .fib-tools { flex-wrap: wrap; }
   .fib-tools .seg button { padding: 5px 7px; font-size: 10px; }
+}
+
+
+/* Hyperliquid Smart Money (stock perps) */
+.hl-page { max-width: 1280px; width: 100%; }
+.hl-ticks { display: flex; flex-wrap: wrap; gap: 6px; }
+.hl-tick {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+  background: var(--bg-panel); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 9px; min-width: 92px; text-align: left;
+}
+.hl-tick:hover { background: var(--bg-hover); border-color: var(--border-strong); }
+.hl-tick.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px rgba(77, 163, 255, 0.35);
+}
+.hl-tick .sym { font-weight: 700; font-size: 13px; }
+.hl-tick .dir { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.hl-tick.long .dir { color: var(--green); }
+.hl-tick.short .dir { color: var(--red); }
+.hl-tick .net { font-size: 11px; color: var(--text-dim); }
+.hl-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 14px;
+  padding: 12px;
+}
+.hl-stat, .hl-leg { min-width: 0; }
+.hl-stat-val { font-size: 18px; font-weight: 600; margin-top: 2px; }
+.hl-leg-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+.hl-leg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; }
+.hl-tfs { margin-left: auto; display: flex; gap: 4px; }
+.hl-chart-wrap { padding: 0 12px 12px; }
+.hl-chart { width: 100%; height: 380px; }
+.chart-legend {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 8px 0 0; font-size: 11px; color: var(--text-dim);
+}
+.swatch {
+  display: inline-block; width: 9px; height: 9px; border-radius: 2px;
+  margin-right: 5px; vertical-align: -1px;
+}
+.swatch.candle-up { background: #26c6da; }
+.swatch.candle-down { background: #e8eef5; height: 8px; border: 1px solid var(--border-strong); }
+.chip.stale { color: var(--amber); border-color: rgba(245, 166, 35, 0.45); background: var(--amber-soft); font-weight: 600; }
+.stale-cell { color: var(--amber); }
+table.data tr.hl-row-active td { background: var(--bg-selected); }
+@media (max-width: 900px) {
+  .hl-stats { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .hl-chart { height: 260px; }
+  .hl-tick { min-width: 78px; padding: 5px 7px; }
+}
+@media (max-width: 420px) {
+  .mobile-tabs button { font-size: 9px; padding: 8px 0; }
 }

@@ -5,6 +5,10 @@ const GT = "https://api.geckoterminal.com/api/v2";
 const DS = "https://api.dexscreener.com";
 const CG = "https://api.coingecko.com/api/v3";
 const SMART_JSON = "data/smart-money.json";
+const HL_SMART_JSON = "data/hl-smart.json";
+const LS_HL_TICKER = "smt-hl-ticker-v1";
+const CANDLE_UP = "#26c6da";
+const CANDLE_DOWN = "#e8eef5";
 
 const INTERVAL = {
   majors: 60_000,
@@ -36,6 +40,7 @@ const NAV = [
   { id: "accumulation", label: "Accumulation", kind: "snap" },
   { id: "flow", label: "Flow", kind: "live" },
   { id: "watchlist", label: "Watchlist", kind: "live" },
+  { id: "hl-smart", label: "HL Stock Perps", kind: "snap" },
   { id: "kol", label: "KOL Signals", kind: "snap" },
   { id: "nansen", label: "Nansen Scan", kind: "snap" },
   { id: "fib", label: "Fib Pullback", kind: "live" },
@@ -50,6 +55,7 @@ const MOBILE_TABS = [
   { id: "accumulation", label: "Accum." },
   { id: "charts", label: "Charts" },
   { id: "watchlist", label: "Watch" },
+  { id: "hl-smart", label: "HL" },
   { id: "fib", label: "Fib" },
   { id: "whales", label: "Whales" },
   { id: "wallets", label: "Wallets" },
@@ -94,9 +100,13 @@ const state = {
   rateLimitedUntil: 0,
   caInput: "",
   alertDraft: { condition: "above", price: "" },
+  hlSmart: null, hlSmartAt: null, hlSmartErr: null,
+  hlTicker: loadJson(LS_HL_TICKER, "AAPL"),
+  hlTf: "1d",
 };
 
 let chart = null, candleSeries = null, volSeries = null, chartHost = null;
+let hlChart = null, hlCandleSeries = null, hlVolSeries = null, hlChartHost = null;
 let chartFittedFor = "";
 let mq = window.matchMedia("(max-width: 768px)");
 let pollers = [];
@@ -781,6 +791,11 @@ async function runSearch(q) {
 function destroyChart() {
   if (chart) { try { chart.remove(); } catch { /* gone */ } }
   chart = null; candleSeries = null; volSeries = null; chartHost = null;
+  destroyHlChart();
+}
+function destroyHlChart() {
+  if (hlChart) { try { hlChart.remove(); } catch { /* gone */ } }
+  hlChart = null; hlCandleSeries = null; hlVolSeries = null; hlChartHost = null;
 }
 function ensureChart(el) {
   if (!el || !window.LightweightCharts) return false;
@@ -882,6 +897,8 @@ function goNav(id) {
   else if (id === "fib") state.mobileTab = "fib";
   else if (id === "whales") state.mobileTab = "whales";
   else if (id === "tracked") state.mobileTab = "wallets";
+  else if (id === "hl-smart") state.mobileTab = "hl-smart";
+  syncHlHash(id);
   renderAll();
   if (id === "fib") maybeKickFib();
 }
@@ -912,9 +929,11 @@ function renderMobileTabs() {
         else if (item.id === "accumulation") state.nav = "accumulation";
         else if (item.id === "charts") state.nav = "terminal";
         else if (item.id === "watchlist") state.nav = "watchlist";
+        else if (item.id === "hl-smart") state.nav = "hl-smart";
         else if (item.id === "fib") state.nav = "fib";
         else if (item.id === "whales") state.nav = "whales";
         else if (item.id === "wallets") state.nav = "tracked";
+        syncHlHash(state.nav);
         renderAll();
         if (item.id === "fib") maybeKickFib();
       },
@@ -951,6 +970,8 @@ function renderStatus() {
   el.append(h("span", { class: "pill snap", text: asOf ? "GMGN smart-money snapshot as of " + asOf : (state.smartErr ? "Smart-money file: " + state.smartErr : "Loading smart-money snapshot…") }));
   const nansenOn = state.smart?.nansenConnected === true;
   el.append(h("span", { class: "pill " + (nansenOn ? "live" : "warn"), text: nansenOn ? "Nansen connected" : "Nansen Scan not connected" }));
+  const hlAsOf = state.hlSmart?.asOfET;
+  el.append(h("span", { class: "pill snap", text: hlAsOf ? "HL stock perps as of " + hlAsOf : (state.hlSmartErr ? "HL stock perps: " + state.hlSmartErr : "Loading HL stock perps…") }));
   el.append(muteButton());
   if (state.rateLimitedUntil > Date.now()) {
     el.append(h("span", { class: "pill danger", text: "API backoff until " + formatEtClock(new Date(state.rateLimitedUntil)) }));
@@ -1014,9 +1035,11 @@ function renderWorkspace() {
   else if (view === "custom") ws.append(renderCustom());
   else if (view === "whales") ws.append(renderWhales());
   else if (view === "tracked" || view === "wallets") ws.append(renderTracked());
+  else if (view === "hl-smart") ws.append(renderHlSmart());
 
   requestAnimationFrame(() => {
     paintChart();
+    paintHlChart();
     ws.scrollTop = view === "terminal" ? 0 : scrollTop;
   });
 }
@@ -3230,6 +3253,317 @@ function trackedLinks(r) {
   return f;
 }
 
+
+/* ---------- Hyperliquid xyz stock-perp smart-money snapshot ---------- */
+function shortEth(address) {
+  if (!address) return "—";
+  if (address.length <= 12) return address;
+  return address.slice(0, 6) + "…" + address.slice(-4);
+}
+function formatPx(n) {
+  if (n == null || !Number.isFinite(Number(n))) return "—";
+  const v = Number(n);
+  const abs = Math.abs(v);
+  const digits = abs >= 100 ? 2 : abs >= 10 ? 2 : 4;
+  return "$" + v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+function hlTickers() { return state.hlSmart?.tickers || []; }
+function hlActiveTicker() {
+  const list = hlTickers();
+  if (list.some((t) => t.ticker === state.hlTicker)) return state.hlTicker;
+  return list[0]?.ticker || state.hlTicker || "AAPL";
+}
+function hlRow(ticker) { return hlTickers().find((t) => t.ticker === ticker) || null; }
+function syncHlHash(navId) {
+  if (navId === "hl-smart") {
+    const next = "#hl-smart/" + hlActiveTicker();
+    if (location.hash !== next) history.replaceState(null, "", next);
+  } else if ((location.hash || "").indexOf("#hl-smart") === 0) {
+    history.replaceState(null, "", location.pathname + location.search);
+  }
+}
+function applyHash() {
+  const raw = (location.hash || "").replace(/^#/, "");
+  if (!raw.startsWith("hl-smart")) return;
+  state.nav = "hl-smart";
+  state.mobileTab = "hl-smart";
+  const parts = raw.split("/").filter(Boolean);
+  if (parts[1]) {
+    state.hlTicker = parts[1].toUpperCase();
+    saveJson(LS_HL_TICKER, state.hlTicker);
+  }
+}
+async function loadHlSmart() {
+  try {
+    const data = await fetchJson(HL_SMART_JSON, { cacheBust: true });
+    if (!data || !Array.isArray(data.tickers)) throw new Error("Invalid hl-smart.json");
+    state.hlSmart = data;
+    state.hlSmartAt = new Date();
+    state.hlSmartErr = null;
+    if (state.nav === "hl-smart") renderWorkspace();
+    else renderStatus();
+  } catch (e) {
+    state.hlSmartErr = e.message || String(e);
+    if (state.nav === "hl-smart") renderWorkspace();
+    else renderStatus();
+  }
+}
+function selectHlTicker(ticker) {
+  state.hlTicker = ticker;
+  saveJson(LS_HL_TICKER, ticker);
+  syncHlHash("hl-smart");
+  if (state.nav === "hl-smart") renderWorkspace();
+}
+function setHlTf(tf) {
+  state.hlTf = tf === "1h" ? "1h" : "1d";
+  if (state.nav === "hl-smart") renderWorkspace();
+}
+function dirClass(dir) {
+  if (dir === "LONG") return "chip up";
+  if (dir === "SHORT") return "chip down";
+  return "chip";
+}
+function mapHlCandles(rows) {
+  return (rows || []).map((r) => ({
+    time: r[0], open: r[1], high: r[2], low: r[3], close: r[4], volume: r[5] || 0,
+  })).filter((c) => c.time != null && Number.isFinite(c.open) && Number.isFinite(c.close));
+}
+function ensureHlChart(el, row) {
+  if (!el || !window.LightweightCharts) return false;
+  if (hlChart && hlChartHost === el && el.isConnected) {
+    try { hlChart.resize(el.clientWidth, Math.max(el.clientHeight, 200)); } catch { /* */ }
+    return true;
+  }
+  destroyHlChart();
+  if (el.clientWidth < 20) return false;
+  const L = window.LightweightCharts;
+  hlChartHost = el;
+  const entries = [row?.longEntry, row?.shortEntry, row?.mark].filter((n) => Number.isFinite(n));
+  hlChart = L.createChart(el, {
+    width: el.clientWidth, height: Math.max(el.clientHeight, 280),
+    layout: { background: { color: "#0e1218" }, textColor: "#8b97a8", fontFamily: "IBM Plex Mono, monospace" },
+    grid: { vertLines: { color: "#1a222d" }, horzLines: { color: "#1a222d" } },
+    rightPriceScale: { borderColor: "#232c38" },
+    timeScale: { borderColor: "#232c38", timeVisible: state.hlTf === "1h", secondsVisible: false },
+    crosshair: { mode: 0 },
+  });
+  hlCandleSeries = hlChart.addCandlestickSeries({
+    upColor: CANDLE_UP, downColor: CANDLE_DOWN,
+    borderUpColor: CANDLE_UP, borderDownColor: CANDLE_DOWN,
+    wickUpColor: CANDLE_UP, wickDownColor: CANDLE_DOWN,
+    autoscaleInfoProvider: (original) => {
+      const res = original();
+      if (!res || !res.priceRange || !entries.length) return res;
+      let min = res.priceRange.minValue;
+      let max = res.priceRange.maxValue;
+      for (const p of entries) { min = Math.min(min, p); max = Math.max(max, p); }
+      const pad = (max - min) * 0.06 || 1;
+      return Object.assign({}, res, { priceRange: { minValue: min - pad, maxValue: max + pad } });
+    },
+  });
+  hlVolSeries = hlChart.addHistogramSeries({ priceFormat: { type: "volume" }, priceScaleId: "hl-vol" });
+  hlChart.priceScale("hl-vol").applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
+  if (!el._hlRo) {
+    el._hlRo = new ResizeObserver(() => {
+      if (hlChart && el.isConnected) hlChart.resize(el.clientWidth, Math.max(el.clientHeight, 200));
+    });
+    el._hlRo.observe(el);
+  }
+  return true;
+}
+function paintHlChart() {
+  const el = document.getElementById("hl-chart-el");
+  const empty = document.getElementById("hl-chart-empty");
+  if (!el) return;
+  const row = hlRow(hlActiveTicker());
+  const pack = row?.candles || {};
+  const bars = mapHlCandles(pack[state.hlTf] && pack[state.hlTf].length ? pack[state.hlTf] : pack["1d"]);
+  if (!bars.length) {
+    if (empty) {
+      empty.hidden = false;
+      empty.textContent = state.hlSmartErr || (state.hlSmart ? "No candles for this ticker." : "Loading Hyperliquid snapshot…");
+    }
+    return;
+  }
+  if (empty) empty.hidden = true;
+  if (!ensureHlChart(el, row)) {
+    if (empty) { empty.hidden = false; empty.textContent = "Chart library did not load."; }
+    return;
+  }
+  hlCandleSeries.setData(bars.map((c) => ({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close })));
+  if (hlVolSeries) {
+    hlVolSeries.setData(bars.map((c) => ({
+      time: c.time, value: c.volume || 0,
+      color: c.close >= c.open ? "rgba(38,198,218,0.35)" : "rgba(232,238,245,0.28)",
+    })));
+  }
+  try { hlCandleSeries.setPriceLines([]); } catch { /* older builds */ }
+  const line = (price, color, title) => {
+    if (!Number.isFinite(price) || !hlCandleSeries.createPriceLine) return;
+    hlCandleSeries.createPriceLine({
+      price, color, lineWidth: 2, lineStyle: 0, axisLabelVisible: true, title,
+    });
+  };
+  if (row?.longEntry) line(row.longEntry, CANDLE_UP, "Long " + formatPx(row.longEntry) + (row.longStale ? " stale" : ""));
+  if (row?.shortEntry) line(row.shortEntry, CANDLE_DOWN, "Short " + formatPx(row.shortEntry) + (row.shortStale ? " stale" : ""));
+  hlChart.timeScale().fitContent();
+}
+function hlEntryBit(label, usd, n, entry, stale, pct) {
+  const hold = h("div", { class: "hl-leg" });
+  hold.append(h("div", { class: "hl-leg-label", text: label }));
+  if (!n) {
+    hold.append(h("div", { class: "sub", text: "No wallets" }));
+    return hold;
+  }
+  const wallets = n === 1 ? "1 wallet" : n + " wallets";
+  const line = formatUsd(usd, "size") + " / " + wallets + " @ " + formatPx(entry);
+  hold.append(h("div", { class: "mono", text: line }));
+  const meta = h("div", { class: "hl-leg-meta" });
+  if (pct != null) meta.append(h("span", { class: "mono " + pctClass(pct), text: formatPct(pct) + " from entry" }));
+  if (stale) meta.append(h("span", { class: "chip stale", text: "stale" }));
+  hold.append(meta);
+  return hold;
+}
+function renderHlSmart() {
+  const wrap = h("div", { class: "stack hl-page" });
+  wrap.append(h("h1", { class: "page-head", text: "Hyperliquid Smart Money (stock perps)" }));
+  const asOf = state.hlSmart?.asOfET || "—";
+  wrap.append(h("p", { class: "page-lead" },
+    "Size-weighted average long and short entries from the most profitable public Hyperliquid wallets holding ",
+    h("span", { class: "mono", text: "xyz" }),
+    " stock perps. ",
+    h("strong", { text: "Public-wallet snapshot, not a trade signal." })
+  ));
+  wrap.append(h("div", { class: "callout info" },
+    "As of ", h("strong", { text: asOf }),
+    ". Universe: top 400 wallets with all-time perp PnL of $200k+, account value of $2k+, and volume under $10B. Entries 15% or more from the mark are tagged stale. Data is from Hyperliquid’s public API, not a third-party site."
+  ));
+  if (state.hlSmartErr && !hlTickers().length) {
+    wrap.append(h("div", { class: "empty", text: "Could not load the snapshot: " + state.hlSmartErr }));
+    return wrap;
+  }
+  if (!hlTickers().length) {
+    wrap.append(h("div", { class: "empty", text: "Loading Hyperliquid snapshot…" }));
+    return wrap;
+  }
+
+  const ticker = hlActiveTicker();
+  const row = hlRow(ticker);
+  const pills = h("div", { class: "hl-ticks" });
+  for (const t of hlTickers()) {
+    pills.append(h("button", {
+      type: "button",
+      class: "hl-tick" + (t.ticker === ticker ? " active" : "") + (t.direction === "LONG" ? " long" : t.direction === "SHORT" ? " short" : ""),
+      onclick: () => selectHlTicker(t.ticker),
+    },
+      h("span", { class: "sym", text: t.ticker }),
+      h("span", { class: "dir", text: t.direction === "FLAT" ? "FLAT" : (t.direction === "LONG" ? "Long" : "Short") }),
+      h("span", { class: "net mono", text: formatSignedUsd(t.netUsd) })
+    ));
+  }
+  wrap.append(pills);
+
+  if (row) {
+    const summary = h("div", { class: "panel hl-summary" });
+    const netLabel = row.direction === "FLAT" ? "Net flat" : (row.direction === "LONG" ? "Net long" : "Net short");
+    summary.append(h("div", { class: "panel-head" },
+      h("h2", {}, row.ticker + "  ", h("span", { class: dirClass(row.direction), text: row.direction })),
+      h("span", { class: "pill snap", text: "SNAPSHOT as of " + asOf }),
+      h("span", { class: "hl-tfs" },
+        h("button", { type: "button", class: "btn sm" + (state.hlTf === "1d" ? " primary" : ""), onclick: () => setHlTf("1d") }, "1D"),
+        h("button", { type: "button", class: "btn sm" + (state.hlTf === "1h" ? " primary" : ""), onclick: () => setHlTf("1h") }, "1H")
+      )
+    ));
+    const stats = h("div", { class: "hl-stats" });
+    stats.append(h("div", { class: "hl-stat" },
+      h("div", { class: "sub", text: netLabel }),
+      h("div", { class: "hl-stat-val mono " + (row.netUsd > 0 ? "up" : row.netUsd < 0 ? "down" : ""), text: formatSignedUsd(row.netUsd) })
+    ));
+    stats.append(h("div", { class: "hl-stat" },
+      h("div", { class: "sub", text: "Mark" }),
+      h("div", { class: "hl-stat-val mono", text: formatPx(row.mark) })
+    ));
+    stats.append(hlEntryBit("Long", row.longUsd, row.longN, row.longEntry, row.longStale, row.longPctFromEntry));
+    stats.append(hlEntryBit("Short", row.shortUsd, row.shortN, row.shortEntry, row.shortStale, row.shortPctFromEntry));
+    summary.append(stats);
+    const chartBox = h("div", { class: "hl-chart-wrap" });
+    chartBox.append(h("div", { id: "hl-chart-el", class: "hl-chart" }));
+    chartBox.append(h("div", { id: "hl-chart-empty", class: "chart-empty" }));
+    chartBox.append(h("div", { class: "chart-legend" },
+      h("span", {}, h("i", { class: "swatch candle-up" }), " Up / long entry"),
+      h("span", {}, h("i", { class: "swatch candle-down" }), " Down / short entry")
+    ));
+    summary.append(chartBox);
+    wrap.append(summary);
+
+    const wallets = row.wallets || [];
+    const wpanel = h("div", { class: "panel" });
+    wpanel.append(h("div", { class: "panel-head" },
+      h("h2", { text: "Top wallets on " + row.ticker }),
+      h("span", { class: "sub", text: "Largest notional among the scanned set" })
+    ));
+    if (!wallets.length) wpanel.append(h("div", { class: "empty", text: "No wallets currently hold this name." }));
+    else {
+      const table = h("table", { class: "data" });
+      table.append(h("thead", {}, h("tr", {},
+        h("th", { text: "Wallet" }), h("th", { text: "Side" }),
+        h("th", { class: "num", text: "Size" }), h("th", { class: "num", text: "Entry" }),
+        h("th", { class: "num", text: "uPnL" })
+      )));
+      const tb = h("tbody");
+      for (const w of wallets) {
+        const href = "https://app.hyperliquid.xyz/explorer/address/" + w.address;
+        tb.append(h("tr", {},
+          h("td", {}, h("a", { class: "mono", href, target: "_blank", rel: "noreferrer", text: shortEth(w.address) })),
+          h("td", {}, h("span", { class: dirClass(w.side), text: w.side || "—" })),
+          h("td", { class: "num", text: formatUsd(w.notional, "size") }),
+          h("td", { class: "num", text: formatPx(w.entry) }),
+          h("td", { class: "num " + pctClass(w.upnl), text: formatSignedUsd(w.upnl) })
+        ));
+      }
+      table.append(tb);
+      wpanel.append(table);
+    }
+    wrap.append(wpanel);
+  }
+
+  const all = h("div", { class: "panel" });
+  all.append(h("div", { class: "panel-head" }, h("h2", { text: "Watchlist" }), h("span", { class: "sub", text: "Click a row to load its chart" })));
+  const table = h("table", { class: "data" });
+  table.append(h("thead", {}, h("tr", {},
+    h("th", { text: "Ticker" }), h("th", { text: "Dir" }),
+    h("th", { class: "num", text: "Net" }),
+    h("th", { class: "num", text: "Long" }), h("th", { class: "num", text: "Short" }),
+    h("th", { class: "num", text: "Mark" }),
+    h("th", { class: "num", text: "% vs long" }), h("th", { class: "num", text: "% vs short" })
+  )));
+  const tb = h("tbody");
+  for (const tkr of hlTickers()) {
+    const longBit = tkr.longN ? formatUsd(tkr.longUsd, "size") + " / " + tkr.longN + " @ " + formatPx(tkr.longEntry) + (tkr.longStale ? " stale" : "") : "—";
+    const shortBit = tkr.shortN ? formatUsd(tkr.shortUsd, "size") + " / " + tkr.shortN + " @ " + formatPx(tkr.shortEntry) + (tkr.shortStale ? " stale" : "") : "—";
+    const tr = h("tr", {
+      class: tkr.ticker === ticker ? "hl-row-active" : "",
+      style: { cursor: "pointer" },
+      onclick: () => selectHlTicker(tkr.ticker),
+    });
+    tr.append(
+      h("td", {}, h("strong", { text: tkr.ticker })),
+      h("td", {}, h("span", { class: dirClass(tkr.direction), text: tkr.direction })),
+      h("td", { class: "num " + pctClass(tkr.netUsd), text: formatSignedUsd(tkr.netUsd) }),
+      h("td", { class: "num" + (tkr.longStale ? " stale-cell" : ""), text: longBit }),
+      h("td", { class: "num" + (tkr.shortStale ? " stale-cell" : ""), text: shortBit }),
+      h("td", { class: "num", text: formatPx(tkr.mark) }),
+      h("td", { class: "num " + pctClass(tkr.longPctFromEntry), text: tkr.longN ? formatPct(tkr.longPctFromEntry) : "—" }),
+      h("td", { class: "num " + pctClass(tkr.shortPctFromEntry), text: tkr.shortN ? formatPct(tkr.shortPctFromEntry) : "—" })
+    );
+    tb.append(tr);
+  }
+  table.append(tb);
+  all.append(h("div", { class: "panel-body", style: { overflowX: "auto" } }, table));
+  wrap.append(all);
+  return wrap;
+}
+
 function startPollers() {
   for (const p of pollers) clearInterval(p);
   pollers = [];
@@ -3244,15 +3578,17 @@ function startPollers() {
   every(() => { if (state.listTab === "new") loadNewPools(); }, INTERVAL.newPools);
   every(() => { if (state.listTab === "boosted") loadBoosts(); }, INTERVAL.boosts);
   every(loadSmartMoney, INTERVAL.smartMoney);
+  every(loadHlSmart, INTERVAL.smartMoney);
   every(loadWatchlist, INTERVAL.watchlist);
   every(() => { if (chartVisible()) loadCandles(tokenAbort?.signal); }, INTERVAL.candles);
   every(() => { if (chartVisible()) loadTrades(tokenAbort?.signal); }, INTERVAL.trades);
 }
 
 function init() {
+  applyHash();
   renderAll();
   Promise.all([
-    loadMajors(), loadSmartMoney(), loadTrending(), loadWatchlist(),
+    loadMajors(), loadSmartMoney(), loadHlSmart(), loadTrending(), loadWatchlist(),
   ]).then(() => {
     if (state.selected) {
       if (tokenAbort) tokenAbort.abort();
@@ -3265,6 +3601,7 @@ function init() {
   startTrackedPollers();
   startFibPollers();
   mq.addEventListener("change", () => renderAll());
+  window.addEventListener("hashchange", () => { applyHash(); renderAll(); });
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
       loadMajors();
